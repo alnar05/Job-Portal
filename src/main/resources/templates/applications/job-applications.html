@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{layout :: head('Job Applications | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container">
+    <h2 class="mb-3">Applications for <span th:text="${job.title}"></span></h2>
+    <div class="card shadow-sm" th:if="${!#lists.isEmpty(applications)}">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Candidate</th>
+                    <th>Applied At</th>
+                    <th>Cover Letter</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="app : ${applications}">
+                    <td th:text="${app.id}"></td>
+                    <td th:text="${app.candidateName}"></td>
+                    <td th:text="${#temporals.format(app.appliedAt, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td th:text="${app.coverLetter != null && !app.coverLetter.isBlank() ? app.coverLetter : '-'}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="alert alert-info" th:if="${#lists.isEmpty(applications)}">No applications received for this job yet.</div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>

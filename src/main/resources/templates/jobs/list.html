@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{layout :: head('Jobs | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Available Jobs</h2>
+        <a sec:authorize="hasRole('EMPLOYER')" th:href="@{/jobs/create}" class="btn btn-primary">Post New Job</a>
+    </div>
+
+    <div class="row g-3" th:if="${!#lists.isEmpty(jobs)}">
+        <div class="col-md-6 col-lg-4" th:each="job : ${jobs}">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title" th:text="${job.title}"></h5>
+                    <h6 class="card-subtitle mb-2 text-muted" th:text="${job.companyName}"></h6>
+                    <p class="card-text" th:text="${#strings.abbreviate(job.description, 140)}"></p>
+                    <p class="fw-semibold mt-auto mb-3" th:text="${'Salary: $' + #numbers.formatDecimal(job.salary, 1, 'COMMA', 2, 'POINT')}"></p>
+                    <a th:href="@{/jobs/{id}(id=${job.id})}" class="btn btn-outline-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info" th:if="${#lists.isEmpty(jobs)}">No jobs available right now.</div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>

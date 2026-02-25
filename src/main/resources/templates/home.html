@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{layout :: head('Welcome | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container py-4">
+    <div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
+        <div class="container-fluid py-3">
+            <h1 class="display-6 fw-bold">Find your next opportunity</h1>
+            <p class="col-md-10 fs-5 text-secondary">
+                Browse open positions, post jobs, and manage applications all in one place.
+            </p>
+            <a sec:authorize="isAuthenticated()" th:href="@{/jobs}" class="btn btn-primary btn-lg">Browse Jobs</a>
+            <p sec:authorize="!isAuthenticated()" class="text-muted mb-0">
+                Please authenticate using your existing credentials to access the portal.
+            </p>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>

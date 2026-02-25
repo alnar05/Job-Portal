@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{layout :: head('Candidate Dashboard | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container">
+    <h2 class="mb-3">Candidate Dashboard</h2>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Total Applications</h5>
+                    <p class="display-6 mb-0" th:text="${#lists.size(applications)}"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white"><strong>Recent Applications</strong></div>
+        <div class="table-responsive" th:if="${!#lists.isEmpty(applications)}">
+            <table class="table table-striped mb-0">
+                <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Applied At</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="app : ${applications}">
+                    <td th:text="${app.jobTitle}"></td>
+                    <td th:text="${#temporals.format(app.appliedAt, 'yyyy-MM-dd HH:mm')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body" th:if="${#lists.isEmpty(applications)}">
+            <p class="mb-0 text-muted">No applications submitted yet.</p>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>
