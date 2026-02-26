@@ -17,7 +17,9 @@
                     <th>ID</th>
                     <th>Candidate</th>
                     <th>Applied At</th>
+                    <th>Status</th>
                     <th>Cover Letter</th>
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -25,7 +27,12 @@
                     <td th:text="${app.id}"></td>
                     <td th:text="${app.candidateName}"></td>
                     <td th:text="${#temporals.format(app.appliedAt, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td><span class="badge text-bg-secondary" th:text="${app.status}"></span></td>
                     <td th:text="${app.coverLetter != null && !app.coverLetter.isBlank() ? app.coverLetter : '-'}"></td>
+
+                    <td>
+                        <a th:href="@{/applications/{id}(id=${app.id})}" class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
                 </tr>
                 </tbody>
             </table>

@@ -1,5 +1,6 @@
 package com.narek.jobportal.dto;
 
+import com.narek.jobportal.entity.ApplicationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,4 +21,5 @@ public class ApplicationResponseDto {
     private String candidateName;
     private String coverLetter;
     private LocalDateTime appliedAt;
+    private ApplicationStatus status;
 }

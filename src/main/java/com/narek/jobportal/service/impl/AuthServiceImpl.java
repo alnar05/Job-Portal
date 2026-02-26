@@ -52,17 +52,26 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // Check if the currently logged-in candidate owns the application
+    @Override
     public boolean isCurrentCandidateApplication(Long applicationId) {
         Application app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         return getCurrentCandidate().getId().equals(app.getCandidate().getId());
     }
-
+    
     // Check if the currently logged-in employer owns the job
+    @Override
     public boolean isCurrentEmployerJob(Long jobId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
         return getCurrentEmployer().getId().equals(job.getEmployer().getId());
+    }
+
+    @Override
+    public boolean isCurrentEmployerApplication(Long applicationId) {
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+        return getCurrentEmployer().getId().equals(app.getJob().getEmployer().getId());
     }
 
 }

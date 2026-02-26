@@ -68,4 +68,28 @@ public class ApplicationMvcController {
         model.addAttribute("applications", applicationService.getApplicationsByJobId(jobId));
         return "applications/job-applications";
     }
+
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id) or @authService.isCurrentCandidateApplication(#id)")
+    public String applicationDetails(@PathVariable Long id, Model model) {
+        model.addAttribute("application", applicationService.markAsReviewed(id));
+        return "applications/details";
+    }
+
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id)")
+    public String acceptApplication(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        applicationService.acceptApplication(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Application accepted.");
+        return "redirect:/applications/" + id;
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id)")
+    public String rejectApplication(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        applicationService.rejectApplication(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Application rejected.");
+        return "redirect:/applications/" + id;
+    }
 }

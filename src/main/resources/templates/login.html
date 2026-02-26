@@ -25,6 +25,8 @@
                     You have been logged out successfully.
                 </div>
 
+                <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+
                 <form th:action="@{/login}" method="post" autocomplete="off" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="username" autocomplete="off" class="form-label">Email</label>
@@ -41,7 +43,7 @@
 
                 <div class="text-center mt-4">
                     <span class="text-muted">Don't have an account?</span>
-                    <a href="#" class="text-decoration-none ms-1">Register</a>
+                    <a th:href="@{/register}" class="text-decoration-none ms-1">Register</a>
                 </div>
             </div>
         </div>

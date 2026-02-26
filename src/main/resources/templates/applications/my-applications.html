@@ -18,6 +18,7 @@
                     <th>ID</th>
                     <th>Job</th>
                     <th>Applied At</th>
+                    <th>Status</th>
                     <th>Cover Letter</th>
                 </tr>
                 </thead>
@@ -26,6 +27,7 @@
                     <td th:text="${app.id}">1</td>
                     <td th:text="${app.jobTitle}">Job</td>
                     <td th:text="${app.appliedAt}">Date</td>
+                    <td><span class="badge text-bg-secondary" th:text="${app.status}"></span></td>
                     <td th:text="${#strings.isEmpty(app.coverLetter) ? '-' : app.coverLetter}">-</td>
                 </tr>
                 </tbody>
