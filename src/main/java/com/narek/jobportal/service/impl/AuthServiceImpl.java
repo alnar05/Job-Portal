@@ -51,14 +51,20 @@ public class AuthServiceImpl implements AuthService {
         return user.getCandidate();
     }
 
+    @Override
+    public boolean isCurrentCandidate(Long candidateId) {
+        Candidate currentCandidate = getCurrentCandidate();
+        return currentCandidate.getId().equals(candidateId);
+    }
+
     // Check if the currently logged-in candidate owns the application
     @Override
     public boolean isCurrentCandidateApplication(Long applicationId) {
-        Application app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-        return getCurrentCandidate().getId().equals(app.getCandidate().getId());
+        return applicationRepository.findById(applicationId)
+                .map(app -> getCurrentCandidate().getId().equals(app.getCandidate().getId()))
+                .orElse(false);
     }
-    
+
     // Check if the currently logged-in employer owns the job
     @Override
     public boolean isCurrentEmployerJob(Long jobId) {
@@ -69,9 +75,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean isCurrentEmployerApplication(Long applicationId) {
-        Application app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-        return getCurrentEmployer().getId().equals(app.getJob().getEmployer().getId());
+        return applicationRepository.findById(applicationId)
+                .map(app -> getCurrentEmployer().getId().equals(app.getJob().getEmployer().getId()))
+                .orElse(false);
     }
 
 }

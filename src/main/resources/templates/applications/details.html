@@ -21,14 +21,14 @@
             <h6>Cover letter</h6>
             <p th:text="${#strings.isEmpty(application.coverLetter) ? '-' : application.coverLetter}"></p>
 
-            <div class="d-flex gap-2 mt-4" sec:authorize="hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#vars['application'].id)">
+            <div class="d-flex gap-2 mt-4" sec:authorize="hasAnyRole('ADMIN','EMPLOYER')">
                 <form th:action="@{/applications/{id}/accept(id=${application.id})}" method="post">
                     <button type="submit" class="btn btn-success"
-                            th:disabled="${application.status.name() == 'ACCEPTED' || application.status.name() == 'REJECTED'}">Accept</button>
+                            th:disabled="${application.status == T(com.narek.jobportal.entity.ApplicationStatus).ACCEPTED || application.status == T(com.narek.jobportal.entity.ApplicationStatus).REJECTED}">Accept</button>
                 </form>
                 <form th:action="@{/applications/{id}/reject(id=${application.id})}" method="post">
                     <button type="submit" class="btn btn-danger"
-                            th:disabled="${application.status.name() == 'ACCEPTED' || application.status.name() == 'REJECTED'}">Reject</button>
+                            th:disabled="${application.status == T(com.narek.jobportal.entity.ApplicationStatus).ACCEPTED || application.status == T(com.narek.jobportal.entity.ApplicationStatus).REJECTED}">Reject</button>
                 </form>
             </div>
         </div>

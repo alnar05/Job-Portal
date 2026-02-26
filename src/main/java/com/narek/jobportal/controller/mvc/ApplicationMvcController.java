@@ -7,6 +7,7 @@ import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -72,8 +73,18 @@ public class ApplicationMvcController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id) or @authService.isCurrentCandidateApplication(#id)")
-    public String applicationDetails(@PathVariable Long id, Model model) {
-        model.addAttribute("application", applicationService.markAsReviewed(id));
+    public String applicationDetails(@PathVariable Long id,
+                                     Authentication authentication,
+                                     Model model) {
+        boolean isEmployerOrAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYER") || a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isEmployerOrAdmin) {
+            model.addAttribute("application", applicationService.markAsReviewed(id));
+        } else {
+            model.addAttribute("application", applicationService.getApplicationById(id));
+        }
+
         return "applications/details";
     }
 

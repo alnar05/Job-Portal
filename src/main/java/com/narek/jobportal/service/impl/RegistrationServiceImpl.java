@@ -63,6 +63,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         if (dto.getRole() == Role.EMPLOYER) {
             Employer employer = new Employer();
             employer.setCompanyName(dto.getCompanyName().trim());
+            employer.setWebsite(normalizeOptional(dto.getWebsite()));
             employer.setUser(savedUser);
             employerRepository.save(employer);
             savedUser.setEmployer(employer);
@@ -71,9 +72,19 @@ public class RegistrationServiceImpl implements RegistrationService {
         if (dto.getRole() == Role.CANDIDATE) {
             Candidate candidate = new Candidate();
             candidate.setFullName(dto.getFullName().trim());
+            candidate.setResumeUrl(normalizeOptional(dto.getResumeUrl()));
             candidate.setUser(savedUser);
             candidateRepository.save(candidate);
             savedUser.setCandidate(candidate);
         }
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

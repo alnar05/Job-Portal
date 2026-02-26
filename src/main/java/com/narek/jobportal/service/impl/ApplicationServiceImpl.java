@@ -49,8 +49,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         Application application = new Application();
         application.setJob(job);
         application.setCandidate(candidate);
-        application.setCoverLetter(dto.getCoverLetter());
-//        application.setAppliedAt(LocalDateTime.now());
+        application.setCoverLetter(normalizeCoverLetter(dto.getCoverLetter()));
 
         Application saved = applicationRepository.save(application);
 
@@ -91,7 +90,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentCandidateApplication(#candidateId)")
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentCandidate(#candidateId)")
     public List<ApplicationResponseDto> getApplicationsByCandidateId(Long candidateId) {
         return applicationRepository.findByCandidateId(candidateId)
                 .stream()
@@ -141,6 +140,15 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         application.setStatus(targetStatus);
         return mapToResponseDto(applicationRepository.save(application));
+    }
+
+    private String normalizeCoverLetter(String coverLetter) {
+        if (coverLetter == null) {
+            return null;
+        }
+
+        String trimmed = coverLetter.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private Application getManagedApplication(Long applicationId) {

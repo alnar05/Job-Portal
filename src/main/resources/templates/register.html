@@ -59,18 +59,29 @@
                         <div class="text-danger small" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
                     </div>
 
-                    <!-- Company Name -->
+                    <!-- Employer Fields -->
                     <div class="mb-3" id="companyNameGroup">
                         <label class="form-label" for="companyName">Company Name</label>
                         <input id="companyName" type="text" th:field="*{companyName}" class="form-control">
                         <div class="text-danger small" th:if="${#fields.hasErrors('companyNameValidForEmployer')}" th:errors="*{companyNameValidForEmployer}"></div>
                     </div>
 
-                    <!-- Full Name -->
-                    <div class="mb-4" id="fullNameGroup">
+                    <div class="mb-3" id="websiteGroup">
+                        <label class="form-label" for="website">Website (optional)</label>
+                        <input id="website" type="url" th:field="*{website}" class="form-control" placeholder="https://example.com">
+                    </div>
+
+
+                    <!-- Candidate Fields -->
+                    <div class="mb-3" id="fullNameGroup">
                         <label class="form-label" for="fullName">Full Name</label>
                         <input id="fullName" type="text" th:field="*{fullName}" class="form-control">
                         <div class="text-danger small" th:if="${#fields.hasErrors('fullNameValidForCandidate')}" th:errors="*{fullNameValidForCandidate}"></div>
+                    </div>
+
+                    <div class="mb-4" id="resumeUrlGroup">
+                        <label class="form-label" for="resumeUrl">Resume URL (optional)</label>
+                        <input id="resumeUrl" type="url" th:field="*{resumeUrl}" class="form-control" placeholder="https://example.com/resume.pdf">
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">Register</button>
@@ -90,11 +101,15 @@
         const roleSelect = document.getElementById('role');
         const companyNameGroup = document.getElementById('companyNameGroup');
         const fullNameGroup = document.getElementById('fullNameGroup');
+        const websiteGroup = document.getElementById('websiteGroup');
+        const resumeUrlGroup = document.getElementById('resumeUrlGroup');
 
         function toggleRoleFields() {
             const role = roleSelect.value;
             companyNameGroup.style.display = role === 'EMPLOYER' ? 'block' : 'none';
+            websiteGroup.style.display = role === 'EMPLOYER' ? 'block' : 'none';
             fullNameGroup.style.display = role === 'CANDIDATE' ? 'block' : 'none';
+            resumeUrlGroup.style.display = role === 'CANDIDATE' ? 'block' : 'none';
         }
 
         roleSelect.addEventListener('change', toggleRoleFields);
