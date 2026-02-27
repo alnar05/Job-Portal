@@ -80,9 +80,9 @@ public class ApplicationMvcController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYER") || a.getAuthority().equals("ROLE_ADMIN"));
 
         if (isEmployerOrAdmin) {
-            model.addAttribute("application", applicationService.markAsReviewed(id));
+            model.addAttribute("applicationDetails", applicationService.markAsReviewed(id));
         } else {
-            model.addAttribute("application", applicationService.getApplicationById(id));
+            model.addAttribute("applicationDetails", applicationService.getApplicationById(id));
         }
 
         return "applications/details";

@@ -9,6 +9,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service("authService")
 public class AuthServiceImpl implements AuthService {
 
@@ -25,9 +27,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Employer getCurrentEmployer() {
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        User user = userRepository.findByEmail(email)
+        User user = getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
         if (user.getEmployer() == null) {
@@ -39,9 +39,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Candidate getCurrentCandidate() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        User user = userRepository.findByEmail(email)
+        User user = getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
         if (user.getCandidate() == null) {
@@ -53,15 +51,22 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean isCurrentCandidate(Long candidateId) {
-        Candidate currentCandidate = getCurrentCandidate();
-        return currentCandidate.getId().equals(candidateId);
+        return getCurrentUser()
+                .map(User::getCandidate)
+                .filter(candidate -> candidate != null && candidate.getId() != null)
+                .map(candidate -> candidate.getId().equals(candidateId))
+                .orElse(false);
     }
 
     // Check if the currently logged-in candidate owns the application
     @Override
     public boolean isCurrentCandidateApplication(Long applicationId) {
         return applicationRepository.findById(applicationId)
-                .map(app -> getCurrentCandidate().getId().equals(app.getCandidate().getId()))
+                .map(app -> getCurrentUser()
+                        .map(User::getCandidate)
+                        .map(Candidate::getId)
+                        .filter(candidateId -> candidateId.equals(app.getCandidate().getId()))
+                        .isPresent())
                 .orElse(false);
     }
 
@@ -70,14 +75,31 @@ public class AuthServiceImpl implements AuthService {
     public boolean isCurrentEmployerJob(Long jobId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
-        return getCurrentEmployer().getId().equals(job.getEmployer().getId());
+        return getCurrentUser()
+                .map(User::getEmployer)
+                .map(Employer::getId)
+                .filter(employerId -> employerId.equals(job.getEmployer().getId()))
+                .isPresent();
     }
 
     @Override
     public boolean isCurrentEmployerApplication(Long applicationId) {
         return applicationRepository.findById(applicationId)
-                .map(app -> getCurrentEmployer().getId().equals(app.getJob().getEmployer().getId()))
+                .map(app -> getCurrentUser()
+                        .map(User::getEmployer)
+                        .map(Employer::getId)
+                        .filter(employerId -> employerId.equals(app.getJob().getEmployer().getId()))
+                        .isPresent())
                 .orElse(false);
     }
 
+    private Optional<User> getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Optional.empty();
+        }
+
+        String email = authentication.getName();
+        return userRepository.findByEmail(email);
+    }
 }
