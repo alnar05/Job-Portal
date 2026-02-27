@@ -5,6 +5,7 @@ import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.service.JobService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -92,9 +93,14 @@ public class JobMvcController {
 
     @PostMapping("/delete/{id}")
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#id)")
-    public String deleteJob(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String deleteJob(@PathVariable Long id,
+                            Authentication authentication,
+                            RedirectAttributes redirectAttributes) {
         jobService.deleteJob(id);
         redirectAttributes.addFlashAttribute("successMessage", "Job deleted successfully.");
-        return "redirect:/jobs";
+        boolean isEmployer = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYER"));
+
+        return isEmployer ? "redirect:/employer/dashboard" : "redirect:/jobs";
     }
 }

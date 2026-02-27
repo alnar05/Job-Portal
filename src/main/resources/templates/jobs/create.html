@@ -29,7 +29,7 @@
 
                         <div class="mb-3">
                             <label for="salary" class="form-label">Salary</label>
-                            <input id="salary" type="number" step="0.01" th:field="*{salary}" class="form-control" th:classappend="${#fields.hasErrors('salary')} ? 'is-invalid' : ''">
+                            <input id="salary" type="number" step="0.01" min="0.01" required th:field="*{salary}" class="form-control" th:classappend="${#fields.hasErrors('salary')} ? 'is-invalid' : ''">
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('salary')}" th:errors="*{salary}"></div>
                         </div>
 

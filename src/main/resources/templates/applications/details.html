@@ -15,7 +15,6 @@
             <p class="mb-1"><strong>Candidate:</strong> <span th:text="${applicationDetails.candidateName}"></span></p>
             <p class="mb-1"><strong>Applied At:</strong> <span th:text="${#temporals.format(applicationDetails.appliedAt, 'yyyy-MM-dd HH:mm')}"></span></p>
             <span class="badge text-bg-secondary" th:text="${applicationDetails.status}"></span>
-            </p>
 
             <h6>Cover letter</h6>
             <p th:text="${#strings.isEmpty(applicationDetails.coverLetter) ? '-' : applicationDetails.coverLetter}"></p>
@@ -30,6 +29,12 @@
                     <button type="submit" class="btn btn-danger"
                             th:disabled="${applicationDetails.status == T(com.narek.jobportal.entity.ApplicationStatus).ACCEPTED || applicationDetails.status == T(com.narek.jobportal.entity.ApplicationStatus).REJECTED}">Reject</button>
                 </form>
+
+                <a th:href="@{${backUrl}}" class="btn btn-outline-secondary" th:text="${backLabel}">Back</a>
+            </div>
+
+            <div class="d-flex gap-2 mt-4" sec:authorize="hasRole('CANDIDATE')">
+                <a th:href="@{${backUrl}}" class="btn btn-outline-secondary" th:text="${backLabel}">Back</a>
             </div>
         </div>
     </div>

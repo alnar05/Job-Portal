@@ -4,10 +4,12 @@ import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.entity.Job;
+import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,10 +17,14 @@ import java.util.List;
 public class JobServiceImpl implements JobService {
 
     private final JobRepository jobRepository;
+    private final ApplicationRepository applicationRepository;
     private final AuthService authService;
 
-    public JobServiceImpl(JobRepository jobRepository, AuthService authService) {
+    public JobServiceImpl(JobRepository jobRepository,
+                          ApplicationRepository applicationRepository,
+                          AuthService authService) {
         this.jobRepository = jobRepository;
+        this.applicationRepository = applicationRepository;
         this.authService = authService;
     }
 
@@ -47,9 +53,11 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Transactional
     public void deleteJob(Long id) {
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
+        applicationRepository.deleteByJobId(job.getId());
         jobRepository.delete(job);
     }
 

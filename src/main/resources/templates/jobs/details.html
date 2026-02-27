@@ -18,8 +18,9 @@
             <div class="d-flex flex-wrap gap-2 mt-4">
                 <form sec:authorize="hasRole('CANDIDATE')" th:action="@{/applications/apply/{jobId}(jobId=${job.id})}" method="post" class="w-100">
                     <label for="coverLetter" class="form-label">Cover letter (optional)</label>
-                    <textarea id="coverLetter" name="coverLetter" class="form-control mb-2" rows="4"
-                              placeholder="Add a short message to the employer (optional)"></textarea>
+                    <textarea id="coverLetter" name="coverLetter" class="form-control mb-2" rows="4" maxlength="2000"
+                              placeholder="Add a short message to the employer (optional, up to 200 words)"></textarea>
+                    <div class="form-text">Max 200 words.</div>
                     <button type="submit" class="btn btn-success">Apply</button>
                 </form>
 

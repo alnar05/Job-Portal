@@ -6,6 +6,7 @@ import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
+import jakarta.validation.ConstraintViolation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.validation.Validator;
+
 @Controller
 @RequestMapping("/applications")
 public class ApplicationMvcController {
@@ -25,13 +28,16 @@ public class ApplicationMvcController {
     private final ApplicationService applicationService;
     private final AuthService authService;
     private final JobService jobService;
+    private final Validator validator;
 
     public ApplicationMvcController(ApplicationService applicationService,
                                     AuthService authService,
-                                    JobService jobService) {
+                                    JobService jobService,
+                                    Validator validator) {
         this.applicationService = applicationService;
         this.authService = authService;
         this.jobService = jobService;
+        this.validator = validator;
     }
 
     @PostMapping("/apply/{jobId}")
@@ -42,6 +48,13 @@ public class ApplicationMvcController {
         ApplicationCreateUpdateDto dto = new ApplicationCreateUpdateDto();
         dto.setJobId(jobId);
         dto.setCoverLetter(coverLetter);
+
+        var violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            ConstraintViolation<ApplicationCreateUpdateDto> violation = violations.iterator().next();
+            redirectAttributes.addFlashAttribute("errorMessage", violation.getMessage());
+            return "redirect:/jobs/" + jobId;
+        }
 
         try {
             applicationService.createApplication(dto);
@@ -81,8 +94,12 @@ public class ApplicationMvcController {
 
         if (isEmployerOrAdmin) {
             model.addAttribute("applicationDetails", applicationService.markAsReviewed(id));
+            model.addAttribute("backUrl", "/employer/dashboard");
+            model.addAttribute("backLabel", "Back to Dashboard");
         } else {
             model.addAttribute("applicationDetails", applicationService.getApplicationById(id));
+            model.addAttribute("backUrl", "/applications/my");
+            model.addAttribute("backLabel", "Back to My Applications");
         }
 
         return "applications/details";

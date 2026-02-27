@@ -29,6 +29,33 @@
     </div>
 </div>
 
+<div class="mt-4">
+    <a th:href="@{/admin/users(role='EMPLOYER')}" class="btn btn-outline-primary">Manage Users</a>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5>Recent Employers</h5>
+                <ul class="mb-0" th:if="${employerUsers != null}">
+                    <li th:each="u : ${employerUsers}" th:text="${u.email}"></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5>Recent Candidates</h5>
+                <ul class="mb-0" th:if="${candidateUsers != null}">
+                    <li th:each="u : ${candidateUsers}" th:text="${u.email}"></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container" th:unless="${adminOverview}">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">Employer Dashboard</h2>
