@@ -30,7 +30,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           NoCacheAuthenticatedPagesFilter noCacheAuthenticatedPagesFilter) throws Exception {
+                                           NoCacheAuthenticatedPagesFilter noCacheAuthenticatedPagesFilter,
+                                           CustomAuthenticationFailureHandler customAuthenticationFailureHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -41,6 +42,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
+                        .failureHandler(customAuthenticationFailureHandler)
                         .defaultSuccessUrl("/dashboard", true)
                         .permitAll()
                 )

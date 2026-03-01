@@ -2,11 +2,13 @@ package com.narek.jobportal.service.impl;
 
 import com.narek.jobportal.entity.Role;
 import com.narek.jobportal.entity.User;
+import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.UserRepository;
 import com.narek.jobportal.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -14,9 +16,11 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final ApplicationRepository applicationRepository;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, ApplicationRepository applicationRepository) {
         this.userRepository = userRepository;
+        this.applicationRepository = applicationRepository;
     }
 
     @Override
@@ -35,8 +39,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getCandidate() != null && user.getCandidate().getId() != null) {
+            applicationRepository.deleteByCandidateId(user.getCandidate().getId());
+        }
+
+        userRepository.delete(user);
     }
 
     @Override

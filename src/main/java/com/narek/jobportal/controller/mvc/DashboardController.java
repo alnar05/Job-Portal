@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Controller
 public class DashboardController {
@@ -32,37 +33,49 @@ public class DashboardController {
         this.userService = userService;
     }
 
-    @GetMapping({"/dashboard", "/employer/dashboard"})
+    @GetMapping({"/dashboard"})
     @PreAuthorize("isAuthenticated()")
-    public String dashboard(Authentication authentication, Model model) {
+    public RedirectView dashboard(Authentication authentication) {
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         boolean isEmployer = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYER"));
-        boolean isCandidate = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_CANDIDATE"));
 
         if (isAdmin) {
-            model.addAttribute("adminOverview", true);
-            model.addAttribute("totalJobs", jobService.getAllJobs().size());
-            model.addAttribute("totalApplications", applicationService.getAllApplications().size());
-            model.addAttribute("employerUsers", userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 5)).getContent());
-            model.addAttribute("candidateUsers", userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 5)).getContent());
-            return "dashboard/employer";
+            return new RedirectView("/dashboard/admin");
         }
 
         if (isEmployer) {
-            Employer employer = authService.getCurrentEmployer();
-            model.addAttribute("jobs", jobService.getJobsByEmployerId(employer.getId()));
-            return "dashboard/employer";
+            return new RedirectView("/dashboard/employer");
         }
 
-        if (isCandidate) {
-            Candidate candidate = authService.getCurrentCandidate();
-            model.addAttribute("applications", applicationService.getApplicationsByCandidateId(candidate.getId()));
-            return "dashboard/candidate";
-        }
+        return new RedirectView("/dashboard/candidate");
 
-        return "home";
+    }
+
+    @GetMapping("/dashboard/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String adminDashboard(Model model) {
+        model.addAttribute("totalJobs", jobService.getAllJobs().size());
+        model.addAttribute("totalApplications", applicationService.getAllApplications().size());
+        model.addAttribute("employerUsers", userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 5)).getContent());
+        model.addAttribute("candidateUsers", userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 5)).getContent());
+        return "dashboard/admin";
+    }
+
+    @GetMapping({"/dashboard/employer", "/employer/dashboard"})
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public String employerDashboard(Model model) {
+        Employer employer = authService.getCurrentEmployer();
+        model.addAttribute("jobs", jobService.getJobsByEmployerId(employer.getId()));
+        return "dashboard/employer";
+    }
+
+    @GetMapping("/dashboard/candidate")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public String candidateDashboard(Model model) {
+        Candidate candidate = authService.getCurrentCandidate();
+        model.addAttribute("applications", applicationService.getApplicationsByCandidateId(candidate.getId()));
+        return "dashboard/candidate";
     }
 }
