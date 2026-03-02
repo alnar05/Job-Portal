@@ -1,6 +1,7 @@
 package com.narek.jobportal.repository;
 
 import com.narek.jobportal.entity.*;
+import com.narek.jobportal.testsupport.TestEntityFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -9,7 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import java.util.Set;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -24,12 +25,7 @@ class RepositoryLayerTest {
 
     @Test
     void givenUsers_whenFindByEmail_thenReturnsCorrectUser() {
-        User user = new User();
-        user.setEmail("candidate1@mail.com");
-        user.setPassword("encoded");
-        user.setEnabled(true);
-        user.setRoles(Set.of(Role.CANDIDATE));
-        userRepository.saveAndFlush(user);
+        userRepository.saveAndFlush(TestEntityFactory.user(null, "candidate1@mail.com", true, Role.CANDIDATE));
 
         assertThat(userRepository.findByEmail("candidate1@mail.com")).isPresent();
         assertThat(userRepository.findByEmail("missing@mail.com")).isEmpty();
@@ -38,12 +34,7 @@ class RepositoryLayerTest {
     @Test
     void givenMultipleRoleUsers_whenPaginateByRole_thenPageWorks() {
         for (int i = 0; i < 5; i++) {
-            User user = new User();
-            user.setEmail("emp" + i + "@mail.com");
-            user.setPassword("encoded");
-            user.setEnabled(true);
-            user.setRoles(Set.of(Role.EMPLOYER));
-            userRepository.save(user);
+            userRepository.save(TestEntityFactory.user(null, "emp" + i + "@mail.com", true, Role.EMPLOYER));
         }
 
         Page<User> page = userRepository.findAllByRole(Role.EMPLOYER, PageRequest.of(0, 2));
@@ -57,12 +48,7 @@ class RepositoryLayerTest {
         Employer employer = persistEmployer("emp@mail.com");
         Candidate candidate = persistCandidate("cand@mail.com", true);
         Job job = persistJob(employer, 2000.0);
-
-        Application application = new Application();
-        application.setJob(job);
-        application.setCandidate(candidate);
-        application.setCoverLetter("first");
-        applicationRepository.saveAndFlush(application);
+        applicationRepository.saveAndFlush(TestEntityFactory.application(null, job, candidate, ApplicationStatus.APPLIED));
 
         assertThat(applicationRepository.existsByJobIdAndCandidateId(job.getId(), candidate.getId())).isTrue();
     }
@@ -70,14 +56,9 @@ class RepositoryLayerTest {
     @Test
     void givenInvalidSalary_whenSaveJob_thenConstraintViolationRaised() {
         Employer employer = persistEmployer("emp2@mail.com");
-        Job job = new Job();
-        job.setTitle("Invalid");
-        job.setDescription("invalid");
-        job.setSalary(-1.0);
-        job.setEmployer(employer);
+        Job job = TestEntityFactory.job(null, employer, -1.0);
 
-        assertThatThrownBy(() -> jobRepository.saveAndFlush(job))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jobRepository.saveAndFlush(job)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -86,10 +67,7 @@ class RepositoryLayerTest {
         Candidate candidate = persistCandidate("cand3@mail.com", true);
         Job job = persistJob(employer, 3000.0);
 
-        Application application = new Application();
-        application.setJob(job);
-        application.setCandidate(candidate);
-        applicationRepository.saveAndFlush(application);
+        applicationRepository.saveAndFlush(TestEntityFactory.application(null, job, candidate, ApplicationStatus.APPLIED));
 
         applicationRepository.deleteByCandidateId(candidate.getId());
         applicationRepository.flush();
@@ -99,54 +77,40 @@ class RepositoryLayerTest {
     }
 
     @Test
-    void givenEnabledAndDisabledUsers_whenFilteringEnabled_thenDisabledExcluded() {
+    void givenCandidateWithSameUser_whenPersistSecondCandidate_thenUniqueConstraintViolation() {
+        User user = userRepository.save(TestEntityFactory.user(null, "unique@mail.com", true, Role.CANDIDATE));
+        candidateRepository.saveAndFlush(TestEntityFactory.candidate(null, user));
+
+        assertThatThrownBy(() -> candidateRepository.saveAndFlush(TestEntityFactory.candidate(null, user)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void givenEnabledAndDisabledCandidates_whenFilteringInMemory_thenDisabledExcluded() {
         persistCandidate("active@mail.com", true);
         persistCandidate("disabled@mail.com", false);
 
-        var enabledCandidates = candidateRepository.findAll().stream()
+        List<Candidate> enabledCandidates = candidateRepository.findAll().stream()
                 .filter(c -> c.getUser().isEnabled())
                 .toList();
 
-        assertThat(enabledCandidates).extracting(c -> c.getUser().getEmail())
-                .containsExactly("active@mail.com");
+        assertThat(enabledCandidates).extracting(c -> c.getUser().getEmail()).containsExactly("active@mail.com");
     }
 
     private Employer persistEmployer(String email) {
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword("encoded");
-        user.setEnabled(true);
-        user.setRoles(Set.of(Role.EMPLOYER));
-        user = userRepository.save(user);
-
-        Employer employer = new Employer();
-        employer.setCompanyName("ACME");
-        employer.setWebsite("https://acme.example");
-        employer.setUser(user);
+        User user = userRepository.save(TestEntityFactory.user(null, email, true, Role.EMPLOYER));
+        Employer employer = TestEntityFactory.employer(null, user);
         return employerRepository.save(employer);
     }
 
     private Candidate persistCandidate(String email, boolean enabled) {
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword("encoded");
-        user.setEnabled(enabled);
-        user.setRoles(Set.of(Role.CANDIDATE));
-        user = userRepository.save(user);
-
-        Candidate candidate = new Candidate();
-        candidate.setFullName("Candidate");
-        candidate.setResumeUrl("https://resume.example");
-        candidate.setUser(user);
+        User user = userRepository.save(TestEntityFactory.user(null, email, enabled, Role.CANDIDATE));
+        Candidate candidate = TestEntityFactory.candidate(null, user);
         return candidateRepository.save(candidate);
     }
 
     private Job persistJob(Employer employer, double salary) {
-        Job job = new Job();
-        job.setTitle("Java Dev");
-        job.setDescription("desc");
-        job.setSalary(salary);
-        job.setEmployer(employer);
+        Job job = TestEntityFactory.job(null, employer, salary);
         return jobRepository.save(job);
     }
 }

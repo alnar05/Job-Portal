@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +39,13 @@ class UserServiceImplTest {
     }
 
     @Test
+    void givenMissingUser_whenSetEnabled_thenThrow() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.setEnabled(1L, false)).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
     void givenCandidateUser_whenDeleteUser_thenDeleteCandidateApplicationsFirst() {
         User user = TestEntityFactory.user(1L, "candidate@mail.com", true, Role.CANDIDATE);
         Candidate candidate = TestEntityFactory.candidate(30L, user);
@@ -48,6 +56,17 @@ class UserServiceImplTest {
         userService.deleteUser(1L);
 
         verify(applicationRepository).deleteByCandidateId(30L);
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    void givenNonCandidateUser_whenDeleteUser_thenSkipApplicationDeletion() {
+        User user = TestEntityFactory.user(1L, "employer@mail.com", true, Role.EMPLOYER);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.deleteUser(1L);
+
+        verify(applicationRepository, never()).deleteByCandidateId(any());
         verify(userRepository).delete(user);
     }
 }

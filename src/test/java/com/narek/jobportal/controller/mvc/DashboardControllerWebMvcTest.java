@@ -12,8 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(DashboardController.class)
 class DashboardControllerWebMvcTest {
@@ -48,5 +47,19 @@ class DashboardControllerWebMvcTest {
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/dashboard/admin"));
+    }
+
+    @Test
+    void givenAnonymousUser_whenOpenDashboard_thenRedirectToLogin() throws Exception {
+        mockMvc.perform(get("/dashboard"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void givenUnknownRole_whenOpenDashboard_thenForbidden() throws Exception {
+        mockMvc.perform(get("/dashboard"))
+                .andExpect(status().isForbidden());
     }
 }

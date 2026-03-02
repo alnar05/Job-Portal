@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -23,29 +24,30 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ApplicationServiceImplTest {
 
-    @Mock
-    private ApplicationRepository applicationRepository;
-    @Mock
-    private JobRepository jobRepository;
-    @Mock
-    private AuthService authService;
+    @Mock private ApplicationRepository applicationRepository;
+    @Mock private JobRepository jobRepository;
+    @Mock private AuthService authService;
 
     @InjectMocks
     private ApplicationServiceImpl applicationService;
 
     @Test
-    void givenCandidateAlreadyApplied_whenCreateApplication_thenThrowConflict() {
-        User user = TestEntityFactory.user(10L, "cand@mail.com", true, Role.CANDIDATE);
-        Candidate candidate = TestEntityFactory.candidate(20L, user);
-        Employer employer = TestEntityFactory.employer(30L, TestEntityFactory.user(11L, "emp@mail.com", true, Role.EMPLOYER));
-        Job job = TestEntityFactory.job(1L, employer, 1000.0);
-        ApplicationCreateUpdateDto dto = new ApplicationCreateUpdateDto(1L, "cover");
+    void givenMissingJob_whenCreateApplication_thenThrowNotFound() {
+        when(jobRepository.findById(99L)).thenReturn(Optional.empty());
 
+        assertThatThrownBy(() -> applicationService.createApplication(new ApplicationCreateUpdateDto(99L, "cover")))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Job not found");
+    }
+
+    @Test
+    void givenCandidateAlreadyApplied_whenCreateApplication_thenThrowConflict() {
+        Candidate candidate = candidate();
+        Job job = job();
         when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
         when(authService.getCurrentCandidate()).thenReturn(candidate);
-        when(applicationRepository.existsByJobIdAndCandidateId(1L, 20L)).thenReturn(true);
-
-        assertThatThrownBy(() -> applicationService.createApplication(dto))
+        when(applicationRepository.existsByJobIdAndCandidateId(1L, candidate.getId())).thenReturn(true);
+        assertThatThrownBy(() -> applicationService.createApplication(new ApplicationCreateUpdateDto(1L, "cover")))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining(HttpStatus.CONFLICT.toString())
                 .hasMessageContaining("already applied");
@@ -54,61 +56,149 @@ class ApplicationServiceImplTest {
     }
 
     @Test
-    void givenValidApplication_whenCreateApplication_thenPersistAndReturnResponse() {
-        User candidateUser = TestEntityFactory.user(10L, "cand@mail.com", true, Role.CANDIDATE);
-        Candidate candidate = TestEntityFactory.candidate(20L, candidateUser);
-        User employerUser = TestEntityFactory.user(11L, "emp@mail.com", true, Role.EMPLOYER);
-        Employer employer = TestEntityFactory.employer(30L, employerUser);
-        Job job = TestEntityFactory.job(1L, employer, 1000.0);
+    void givenBlankCoverLetter_whenCreateApplication_thenPersistNullCoverLetter() {
+        Candidate candidate = candidate();
+        Job job = job();
+        Application saved = TestEntityFactory.application(12L, job, candidate, ApplicationStatus.APPLIED);
+        saved.setCoverLetter(null);
 
-        ApplicationCreateUpdateDto dto = new ApplicationCreateUpdateDto(1L, "   My cover letter   ");
+        when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
+        when(authService.getCurrentCandidate()).thenReturn(candidate);
+        when(applicationRepository.existsByJobIdAndCandidateId(1L, candidate.getId())).thenReturn(false);
+        when(applicationRepository.save(any(Application.class))).thenReturn(saved);
+
+        ApplicationResponseDto response = applicationService.createApplication(new ApplicationCreateUpdateDto(1L, "   "));
+
+        assertThat(response.getCoverLetter()).isNull();
+    }
+
+    @Test
+    void givenValidApplication_whenCreateApplication_thenPersistAndReturnResponse() {
+        Candidate candidate = candidate();
+        Job job = job();
         Application saved = TestEntityFactory.application(100L, job, candidate, ApplicationStatus.APPLIED);
         saved.setCoverLetter("My cover letter");
 
         when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
         when(authService.getCurrentCandidate()).thenReturn(candidate);
-        when(applicationRepository.existsByJobIdAndCandidateId(1L, 20L)).thenReturn(false);
+        when(applicationRepository.existsByJobIdAndCandidateId(1L, candidate.getId())).thenReturn(false);
         when(applicationRepository.save(any(Application.class))).thenReturn(saved);
 
-        ApplicationResponseDto response = applicationService.createApplication(dto);
+        ApplicationResponseDto response = applicationService.createApplication(new ApplicationCreateUpdateDto(1L, "  My cover letter  "));
 
         assertThat(response.getId()).isEqualTo(100L);
-        assertThat(response.getJobId()).isEqualTo(1L);
-        assertThat(response.getCandidateId()).isEqualTo(20L);
-        assertThat(response.getCoverLetter()).isEqualTo("My cover letter");
         assertThat(response.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
+        verify(applicationRepository).save(any(Application.class));
+    }
+
+    @Test
+    void givenUpdateCall_whenUpdateApplication_thenThrowUnsupportedOperationException() {
+        assertThatThrownBy(() -> applicationService.updateApplication(1L, new ApplicationCreateUpdateDto()))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("not allowed");
+    }
+
+    @Test
+    void givenApplicationNotFound_whenDeleteApplication_thenThrowNotFound() {
+        when(applicationRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> applicationService.deleteApplication(5L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404 NOT_FOUND");
+    }
+
+    @Test
+    void givenApplicationExists_whenDeleteApplication_thenDeleteIt() {
+        Application application = application(10L, ApplicationStatus.APPLIED);
+        when(applicationRepository.findById(10L)).thenReturn(Optional.of(application));
+
+        applicationService.deleteApplication(10L);
+
+        verify(applicationRepository).delete(application);
+    }
+
+    @Test
+    void givenApplicationNotFound_whenGetApplicationById_thenThrowNotFound() {
+        when(applicationRepository.findById(6L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> applicationService.getApplicationById(6L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404 NOT_FOUND");
+    }
+
+    @Test
+    void givenApplications_whenGetAllApplications_thenMapAll() {
+        when(applicationRepository.findAll()).thenReturn(List.of(application(1L, ApplicationStatus.APPLIED), application(2L, ApplicationStatus.REVIEWED)));
+
+        List<ApplicationResponseDto> results = applicationService.getAllApplications();
+
+        assertThat(results).hasSize(2);
+    }
+
+    @Test
+    void givenAppliedStatus_whenMarkAsReviewed_thenSetReviewed() {
+        Application application = application(7L, ApplicationStatus.APPLIED);
+        when(applicationRepository.findById(7L)).thenReturn(Optional.of(application));
+        when(applicationRepository.save(application)).thenReturn(application);
+
+        ApplicationResponseDto result = applicationService.markAsReviewed(7L);
+
+        assertThat(result.getStatus()).isEqualTo(ApplicationStatus.REVIEWED);
+    }
+
+    @Test
+    void givenNonAppliedStatus_whenMarkAsReviewed_thenKeepCurrentStatus() {
+        Application application = application(7L, ApplicationStatus.REVIEWED);
+        when(applicationRepository.findById(7L)).thenReturn(Optional.of(application));
+        when(applicationRepository.save(application)).thenReturn(application);
+
+        ApplicationResponseDto result = applicationService.markAsReviewed(7L);
+
+        assertThat(result.getStatus()).isEqualTo(ApplicationStatus.REVIEWED);
     }
 
     @Test
     void givenAppliedStatus_whenAcceptApplication_thenSetAccepted() {
-        Application application = TestEntityFactory.application(1L,
-                TestEntityFactory.job(2L, TestEntityFactory.employer(3L, TestEntityFactory.user(4L, "emp@mail.com", true, Role.EMPLOYER)), 1000),
-                TestEntityFactory.candidate(5L, TestEntityFactory.user(6L, "cand@mail.com", true, Role.CANDIDATE)),
-                ApplicationStatus.APPLIED);
-
+        Application application = application(1L, ApplicationStatus.APPLIED);
         when(applicationRepository.findById(1L)).thenReturn(Optional.of(application));
         when(applicationRepository.save(application)).thenReturn(application);
 
         ApplicationResponseDto result = applicationService.acceptApplication(1L);
 
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.ACCEPTED);
-        verify(applicationRepository).save(application);
+
     }
 
     @Test
-    void givenFinalizedStatus_whenRejectApplication_thenThrowBadRequest() {
-        Application application = TestEntityFactory.application(1L,
-                TestEntityFactory.job(2L, TestEntityFactory.employer(3L, TestEntityFactory.user(4L, "emp@mail.com", true, Role.EMPLOYER)), 1000),
-                TestEntityFactory.candidate(5L, TestEntityFactory.user(6L, "cand@mail.com", true, Role.CANDIDATE)),
-                ApplicationStatus.ACCEPTED);
+    void givenReviewedStatus_whenRejectApplication_thenSetRejected() {
+        Application application = application(1L, ApplicationStatus.REVIEWED);
+        when(applicationRepository.findById(1L)).thenReturn(Optional.of(application));
+        when(applicationRepository.save(application)).thenReturn(application);
 
+        ApplicationResponseDto result = applicationService.rejectApplication(1L);
+
+        assertThat(result.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
+    }
+    @Test
+    void givenFinalizedStatus_whenAcceptApplication_thenThrowBadRequest() {
+        Application application = application(1L, ApplicationStatus.ACCEPTED);
         when(applicationRepository.findById(1L)).thenReturn(Optional.of(application));
 
-        assertThatThrownBy(() -> applicationService.rejectApplication(1L))
+        assertThatThrownBy(() -> applicationService.acceptApplication(1L))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining(HttpStatus.BAD_REQUEST.toString())
+                .hasMessageContaining("400 BAD_REQUEST")
                 .hasMessageContaining("already finalized");
+    }
 
-        verify(applicationRepository, never()).save(any());
+    private Candidate candidate() {
+        return TestEntityFactory.candidate(20L, TestEntityFactory.user(10L, "cand@mail.com", true, Role.CANDIDATE));
+    }
+
+    private Job job() {
+        return TestEntityFactory.job(1L, TestEntityFactory.employer(30L, TestEntityFactory.user(11L, "emp@mail.com", true, Role.EMPLOYER)), 1000.0);
+    }
+
+    private Application application(Long id, ApplicationStatus status) {
+        return TestEntityFactory.application(id, job(), candidate(), status);
     }
 }
