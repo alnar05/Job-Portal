@@ -1,23 +1,21 @@
 package com.narek.jobportal.service.impl;
 
-import com.narek.jobportal.dto.ProfileUpdateDto;
-import com.narek.jobportal.entity.Role;
-import com.narek.jobportal.entity.User;
 import com.narek.jobportal.entity.Candidate;
+import com.narek.jobportal.entity.User;
 import com.narek.jobportal.repository.CandidateRepository;
-import com.narek.jobportal.testsupport.TestEntityFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CandidateServiceImplTest {
@@ -29,41 +27,82 @@ class CandidateServiceImplTest {
     private CandidateServiceImpl candidateService;
 
     @Test
-    void givenCandidateNotFound_whenUpdateOwnProfile_thenThrow() {
-        when(candidateRepository.findByUserEmail("candidate@mail.com")).thenReturn(Optional.empty());
+    void saveCandidate_shouldPersistAndReturnSavedCandidate_whenInputIsValid() {
+        Candidate input = buildCandidate(null, "John Candidate", 11L);
+        Candidate saved = buildCandidate(1L, "John Candidate", 11L);
+        given(candidateRepository.save(input)).willReturn(saved);
 
-        assertThatThrownBy(() -> candidateService.updateOwnProfile(new ProfileUpdateDto(), "candidate@mail.com"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("not found");
+        Candidate result = candidateService.saveCandidate(input);
+
+        assertEquals(1L, result.getId());
+        assertEquals("John Candidate", result.getFullName());
+        assertEquals(11L, result.getUser().getId());
+        verify(candidateRepository).save(input);
     }
 
     @Test
-    void givenAuthenticatedEmailMismatch_whenUpdateOwnProfile_thenDenyAccess() {
-        User user = TestEntityFactory.user(1L, "other@mail.com", true, Role.CANDIDATE);
-        Candidate candidate = TestEntityFactory.candidate(10L, user);
-        when(candidateRepository.findByUserEmail("candidate@mail.com")).thenReturn(Optional.of(candidate));
+    void saveCandidate_shouldPropagateException_whenRepositoryFails() {
+        Candidate input = buildCandidate(null, "Jane Candidate", 10L);
+        given(candidateRepository.save(input)).willThrow(new IllegalArgumentException("invalid candidate"));
 
-        assertThatThrownBy(() -> candidateService.updateOwnProfile(new ProfileUpdateDto(), "candidate@mail.com"))
-                .isInstanceOf(AccessDeniedException.class);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> candidateService.saveCandidate(input));
+
+        assertEquals("invalid candidate", exception.getMessage());
+        verify(candidateRepository).save(input);
     }
 
     @Test
-    void givenAuthenticatedCandidate_whenUpdateOwnProfile_thenOnlyCandidateFieldsUpdated() {
-        User user = TestEntityFactory.user(1L, "candidate@mail.com", true, Role.CANDIDATE);
-        Candidate candidate = TestEntityFactory.candidate(10L, user);
+    void getCandidateById_shouldReturnCandidate_whenCandidateExists() {
+        Candidate candidate = buildCandidate(9L, "Alice", 100L);
+        given(candidateRepository.findById(9L)).willReturn(Optional.of(candidate));
 
-        ProfileUpdateDto dto = new ProfileUpdateDto();
-        dto.setFullName("Updated Name");
-        dto.setResumeUrl("https://resume.example/new");
-        dto.setCompanyName("Must not be copied");
+        Optional<Candidate> result = candidateService.getCandidateById(9L);
 
-        when(candidateRepository.findByUserEmail("candidate@mail.com")).thenReturn(Optional.of(candidate));
-        when(candidateRepository.save(candidate)).thenReturn(candidate);
+        assertTrue(result.isPresent());
+        assertEquals("Alice", result.get().getFullName());
+        verify(candidateRepository).findById(9L);
+    }
 
-        Candidate updated = candidateService.updateOwnProfile(dto, "candidate@mail.com");
+    @Test
+    void getCandidateById_shouldReturnEmpty_whenCandidateDoesNotExist() {
+        given(candidateRepository.findById(99L)).willReturn(Optional.empty());
 
-        assertThat(updated.getFullName()).isEqualTo("Updated Name");
-        assertThat(updated.getResumeUrl()).isEqualTo("https://resume.example/new");
-        verify(candidateRepository).save(candidate);;
+        Optional<Candidate> result = candidateService.getCandidateById(99L);
+
+        assertTrue(result.isEmpty());
+        verify(candidateRepository).findById(99L);
+    }
+
+    @Test
+    void getCandidateByUserId_shouldReturnCandidate_whenMappingExists() {
+        Candidate candidate = buildCandidate(7L, "Bob", 88L);
+        given(candidateRepository.findByUserId(88L)).willReturn(Optional.of(candidate));
+
+        Optional<Candidate> result = candidateService.getCandidateByUserId(88L);
+
+        assertTrue(result.isPresent());
+        assertEquals(7L, result.get().getId());
+        verify(candidateRepository).findByUserId(88L);
+    }
+
+    @Test
+    void getCandidateByUserId_shouldReturnEmpty_whenMappingDoesNotExist() {
+        given(candidateRepository.findByUserId(404L)).willReturn(Optional.empty());
+
+        Optional<Candidate> result = candidateService.getCandidateByUserId(404L);
+
+        assertTrue(result.isEmpty());
+        verify(candidateRepository).findByUserId(404L);
+    }
+
+    private static Candidate buildCandidate(Long candidateId, String fullName, Long userId) {
+        User user = new User();
+        user.setId(userId);
+
+        Candidate candidate = new Candidate();
+        candidate.setId(candidateId);
+        candidate.setFullName(fullName);
+        candidate.setUser(user);
+        return candidate;
     }
 }

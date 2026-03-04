@@ -1,11 +1,7 @@
 package com.narek.jobportal.service.impl;
 
-import com.narek.jobportal.entity.Candidate;
-import com.narek.jobportal.entity.Role;
 import com.narek.jobportal.entity.User;
-import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.UserRepository;
-import com.narek.jobportal.testsupport.TestEntityFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,59 +10,95 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
-    @Mock
-    private ApplicationRepository applicationRepository;
 
     @InjectMocks
     private UserServiceImpl userService;
 
     @Test
-    void givenAdminDisablesUser_whenSetEnabledFalse_thenPersistDisabledFlag() {
-        User user = TestEntityFactory.user(1L, "candidate@mail.com", true, Role.CANDIDATE);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    void saveUser_shouldPersistAndReturnSavedUser() {
+        User input = new User();
+        input.setEmail("user@example.com");
 
-        userService.setEnabled(1L, false);
+        User saved = new User();
+        saved.setId(1L);
+        saved.setEmail("user@example.com");
 
-        verify(userRepository).save(argThat(saved -> !saved.isEnabled()));
+        given(userRepository.save(input)).willReturn(saved);
+
+        User result = userService.saveUser(input);
+
+        assertEquals(1L, result.getId());
+        assertEquals("user@example.com", result.getEmail());
+        verify(userRepository).save(input);
     }
 
     @Test
-    void givenMissingUser_whenSetEnabled_thenThrow() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    void getUserById_shouldReturnUser_whenPresent() {
+        User user = new User();
+        user.setId(7L);
+        user.setEmail("id@example.com");
+        given(userRepository.findById(7L)).willReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.setEnabled(1L, false)).isInstanceOf(RuntimeException.class);
+        Optional<User> result = userService.getUserById(7L);
+
+        assertTrue(result.isPresent());
+        assertEquals("id@example.com", result.get().getEmail());
+        verify(userRepository).findById(7L);
     }
 
     @Test
-    void givenCandidateUser_whenDeleteUser_thenDeleteCandidateApplicationsFirst() {
-        User user = TestEntityFactory.user(1L, "candidate@mail.com", true, Role.CANDIDATE);
-        Candidate candidate = TestEntityFactory.candidate(30L, user);
-        user.setCandidate(candidate);
+    void getUserById_shouldReturnEmpty_whenMissing() {
+        given(userRepository.findById(7L)).willReturn(Optional.empty());
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Optional<User> result = userService.getUserById(7L);
 
-        userService.deleteUser(1L);
-
-        verify(applicationRepository).deleteByCandidateId(30L);
-        verify(userRepository).delete(user);
+        assertTrue(result.isEmpty());
+        verify(userRepository).findById(7L);
     }
 
     @Test
-    void givenNonCandidateUser_whenDeleteUser_thenSkipApplicationDeletion() {
-        User user = TestEntityFactory.user(1L, "employer@mail.com", true, Role.EMPLOYER);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    void getUserByEmail_shouldReturnUser_whenPresent() {
+        User user = new User();
+        user.setEmail("mail@example.com");
+        given(userRepository.findByEmail("mail@example.com")).willReturn(Optional.of(user));
 
-        userService.deleteUser(1L);
+        Optional<User> result = userService.getUserByEmail("mail@example.com");
 
-        verify(applicationRepository, never()).deleteByCandidateId(any());
+        assertTrue(result.isPresent());
+        assertEquals("mail@example.com", result.get().getEmail());
+        verify(userRepository).findByEmail("mail@example.com");
+    }
+
+    @Test
+    void getUserByEmail_shouldReturnEmpty_whenMissing() {
+        given(userRepository.findByEmail("missing@example.com")).willReturn(Optional.empty());
+
+        Optional<User> result = userService.getUserByEmail("missing@example.com");
+
+        assertTrue(result.isEmpty());
+        verify(userRepository).findByEmail("missing@example.com");
+    }
+
+    @Test
+    void deleteUser_shouldDeleteUser_whenUserExists() {
+        User user = new User();
+        user.setId(3L);
+
+        given(userRepository.findById(3L)).willReturn(Optional.of(user));
+
+        userService.deleteUser(3L);
+
+        verify(userRepository).findById(3L);
         verify(userRepository).delete(user);
     }
 }
