@@ -5,6 +5,8 @@ import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.repository.UserRepository;
 import com.narek.jobportal.service.AuthService;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,10 +30,10 @@ public class AuthServiceImpl implements AuthService {
     public Employer getCurrentEmployer() {
 
         User user = getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Authenticated user not found"));
 
         if (user.getEmployer() == null) {
-            throw new RuntimeException("User is not an employer");
+            throw new AccessDeniedException("User is not an employer");
         }
 
         return user.getEmployer();
@@ -40,10 +42,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Candidate getCurrentCandidate() {
         User user = getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Authenticated user not found"));
 
         if (user.getCandidate() == null) {
-            throw new RuntimeException("User is not a candidate");
+            throw new AccessDeniedException("User is not a candidate");
         }
 
         return user.getCandidate();
@@ -74,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean isCurrentEmployerJob(Long jobId) {
         Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + jobId));
         return getCurrentUser()
                 .map(User::getEmployer)
                 .map(Employer::getId)

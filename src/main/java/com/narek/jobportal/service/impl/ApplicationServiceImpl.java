@@ -6,10 +6,12 @@ import com.narek.jobportal.entity.Application;
 import com.narek.jobportal.entity.ApplicationStatus;
 import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.entity.Job;
+import com.narek.jobportal.exception.DuplicateApplicationException;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -37,13 +39,15 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Transactional
     public ApplicationResponseDto createApplication(ApplicationCreateUpdateDto dto) {
         Job job = jobRepository.findById(dto.getJobId())
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + dto.getJobId()));
 
         Candidate candidate = authService.getCurrentCandidate();
 
         // prevent duplicate applications
-        if (applicationRepository.existsByJobIdAndCandidateId(job.getId(), candidate.getId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "You already applied to this job");
+        if (applicationRepository.existsByJobIdAndCandidateId(dto.getJobId(), candidate.getId())) {
+            throw new DuplicateApplicationException(
+                    "You have already already applied for job with id " + dto.getJobId()
+            );
         }
 
         Application application = new Application();

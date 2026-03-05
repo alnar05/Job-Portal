@@ -6,9 +6,11 @@ import com.narek.jobportal.entity.Application;
 import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.entity.Job;
 import com.narek.jobportal.entity.User;
+import com.narek.jobportal.exception.DuplicateApplicationException;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.AuthService;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -89,13 +91,12 @@ class ApplicationServiceImplTest {
         given(authService.getCurrentCandidate()).willReturn(candidate);
         given(applicationRepository.existsByJobIdAndCandidateId(job.getId(), candidate.getId())).willReturn(true);
 
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
+        DuplicateApplicationException exception = assertThrows(
+                DuplicateApplicationException.class,
                 () -> applicationService.createApplication(dto)
         );
 
-        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
-        assertEquals("You already applied to this job", exception.getReason());
+        assertEquals("You have already already applied for job with id 10", exception.getMessage());
 
         verify(applicationRepository, never()).save(any(Application.class));
     }
@@ -105,12 +106,12 @@ class ApplicationServiceImplTest {
         ApplicationCreateUpdateDto dto = new ApplicationCreateUpdateDto(999L, "Interested in this position");
         given(jobRepository.findById(dto.getJobId())).willReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
                 () -> applicationService.createApplication(dto)
         );
 
-        assertEquals("Job not found", exception.getMessage());
+        assertEquals("Job not found with id 999", exception.getMessage());
         verify(authService, never()).getCurrentCandidate();
         verify(applicationRepository, never()).save(any(Application.class));
     }

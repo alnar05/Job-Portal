@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -25,9 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,6 +36,9 @@ class JobPortalIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private UserRepository userRepository;
@@ -265,6 +267,146 @@ class JobPortalIntegrationTest {
         assertThat(applicationRepository.findAll())
                 .extracting(Application::getJob)
                 .noneMatch(existingJob -> existingJob.getId().equals(job.getId()));
+    }
+
+    @Test
+    void employerCannotDeleteOtherEmployerJob() throws Exception {
+        // Given
+        registerEmployer("owner-employer@example.com", "Owner Corp", "https://owner.example");
+        registerEmployer("other-employer@example.com", "Other Corp", "https://other.example");
+
+        String createJobPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "title", "Owned Job",
+                "description", "Job belongs to owner employer",
+                "salary", 95000.0
+        ));
+
+        mockMvc.perform(post("/api/jobs")
+                        .with(user("owner-employer@example.com").roles("EMPLOYER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createJobPayload))
+                .andExpect(status().isOk());
+
+        User ownerUser = userRepository.findByEmail("owner-employer@example.com").orElseThrow();
+        Long ownerEmployerId = employerRepository.findByUserId(ownerUser.getId()).orElseThrow().getId();
+        Job createdJob = jobRepository.findByEmployerId(ownerEmployerId).stream().findFirst().orElseThrow();
+
+        // When / Then
+        mockMvc.perform(delete("/api/jobs/{id}", createdJob.getId())
+                        .with(user("other-employer@example.com").roles("EMPLOYER"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+
+        assertThat(jobRepository.findById(createdJob.getId())).isPresent();
+    }
+
+    @Test
+    void candidateCannotApplyTwice() throws Exception {
+        // Given
+        registerEmployer("twice-employer@example.com", "Twice Hiring", "https://twice-hiring.example");
+        registerCandidate("twice-candidate@example.com", "Twice Candidate", "https://resume.example/twice");
+
+        String createJobPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "title", "API Developer",
+                "description", "Build Java APIs",
+                "salary", 110000.0
+        ));
+
+        mockMvc.perform(post("/api/jobs")
+                        .with(user("twice-employer@example.com").roles("EMPLOYER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createJobPayload))
+                .andExpect(status().isOk());
+
+        Job createdJob = jobRepository.findAll().stream()
+                .filter(job -> "API Developer".equals(job.getTitle()))
+                .findFirst()
+                .orElseThrow();
+
+        String applyPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "jobId", createdJob.getId(),
+                "coverLetter", "I can contribute to API development"
+        ));
+
+        // When
+        mockMvc.perform(post("/api/applications")
+                        .with(user("twice-candidate@example.com").roles("CANDIDATE"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyPayload))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/applications")
+                        .with(user("twice-candidate@example.com").roles("CANDIDATE"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyPayload))
+                .andExpect(status().isConflict());
+
+        // Then
+        User candidateUser = userRepository.findByEmail("twice-candidate@example.com").orElseThrow();
+        Long candidateId = candidateRepository.findByUserId(candidateUser.getId()).orElseThrow().getId();
+        long applicationCount = applicationRepository.findByJobId(createdJob.getId()).stream()
+                .filter(application -> application.getCandidate().getId().equals(candidateId))
+                .count();
+
+        assertThat(applicationCount).isEqualTo(1L);
+    }
+
+    @Test
+    void createJob_withInvalidPayload_returns400() throws Exception {
+        // Given
+        registerEmployer("invalid-job-employer@example.com", "Invalid Job Inc", "https://invalid-job.example");
+        String invalidPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "title", "",
+                "description", "",
+                "salary", 0
+        ));
+
+        // When / Then
+        mockMvc.perform(post("/api/jobs")
+                        .with(user("invalid-job-employer@example.com").roles("EMPLOYER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPayload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_withExistingEmail_returnsConflict() throws Exception {
+        // Given
+        String email = "existing-register@example.com";
+
+        mockMvc.perform(post("/register")
+                        .with(csrf())
+                        .param("email", email)
+                        .param("password", "Secret123")
+                        .param("confirmPassword", "Secret123")
+                        .param("role", Role.CANDIDATE.name())
+                        .param("fullName", "Existing Candidate")
+                        .param("resumeUrl", "https://resume.example/existing"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        // When / Then
+        mockMvc.perform(post("/register")
+                        .with(csrf())
+                        .param("email", email)
+                        .param("password", "Secret123")
+                        .param("confirmPassword", "Secret123")
+                        .param("role", Role.CANDIDATE.name())
+                        .param("fullName", "Duplicate Candidate")
+                        .param("resumeUrl", "https://resume.example/duplicate"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("registrationForm", "email"));
+
+        long usersWithEmail = userRepository.findAll().stream()
+                .filter(user -> email.equals(user.getEmail()))
+                .count();
+
+        assertThat(usersWithEmail).isEqualTo(1L);
     }
 
     private void registerCandidate(String email, String fullName, String resumeUrl) throws Exception {

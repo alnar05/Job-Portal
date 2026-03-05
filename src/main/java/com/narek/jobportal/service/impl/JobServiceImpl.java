@@ -8,6 +8,7 @@ import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +40,7 @@ public class JobServiceImpl implements JobService {
     @Override
     public JobResponseDto getJobById(Long id) {
         Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
 
         return mapToResponse(job);
     }
@@ -56,7 +57,7 @@ public class JobServiceImpl implements JobService {
     @Transactional
     public void deleteJob(Long id) {
         Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
         applicationRepository.deleteByJobId(job.getId());
         jobRepository.delete(job);
     }
@@ -78,7 +79,7 @@ public class JobServiceImpl implements JobService {
     @Override
     public JobResponseDto updateJob(Long id, JobCreateUpdateDto dto) {
         Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
 
         job.setTitle(dto.getTitle());
         job.setDescription(dto.getDescription());

@@ -3,6 +3,7 @@ package com.narek.jobportal.controller.mvc;
 import com.narek.jobportal.entity.Role;
 import com.narek.jobportal.entity.User;
 import com.narek.jobportal.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,7 +44,7 @@ public class AdminUserMvcController {
     @GetMapping("/{id}")
     public String userDetails(@PathVariable Long id, Model model) {
         User user = userService.getUserById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
         model.addAttribute("user", user);
         return "dashboard/admin-user-details";
     }

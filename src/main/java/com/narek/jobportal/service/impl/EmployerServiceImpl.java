@@ -4,6 +4,7 @@ import com.narek.jobportal.dto.ProfileUpdateDto;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.repository.EmployerRepository;
 import com.narek.jobportal.service.EmployerService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +44,8 @@ public class EmployerServiceImpl implements EmployerService {
     @Transactional
     public Employer updateOwnProfile(ProfileUpdateDto profileUpdateDto, String authenticatedEmail) {
         Employer employer = employerRepository.findByUserEmail(authenticatedEmail)
-                .orElseThrow(() -> new RuntimeException("Employer profile not found"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Employer profile not found for email: " + authenticatedEmail));
 
         if (!employer.getUser().getEmail().equals(authenticatedEmail)) {
             throw new AccessDeniedException("You can only update your own profile");

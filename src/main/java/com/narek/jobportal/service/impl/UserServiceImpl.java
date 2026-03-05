@@ -5,6 +5,7 @@ import com.narek.jobportal.entity.User;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.UserRepository;
 import com.narek.jobportal.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
 
         if (user.getCandidate() != null && user.getCandidate().getId() != null) {
             applicationRepository.deleteByCandidateId(user.getCandidate().getId());
@@ -59,7 +60,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void setEnabled(Long id, boolean enabled) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
         user.setEnabled(enabled);
         userRepository.save(user);
     }

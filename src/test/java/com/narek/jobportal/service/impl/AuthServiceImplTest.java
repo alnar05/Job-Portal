@@ -8,6 +8,7 @@ import com.narek.jobportal.entity.User;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -272,10 +273,10 @@ class AuthServiceImplTest {
         // No auth setup needed — the method must throw before reaching the user lookup.
         given(jobRepository.findById(50L)).willReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> authService.isCurrentEmployerJob(50L));
 
-        assertEquals("Job not found", exception.getMessage());
+        assertEquals("Job not found with id 50", exception.getMessage());
         verify(jobRepository).findById(50L);
     }
 

@@ -5,6 +5,7 @@ import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.service.CandidateService;
 import com.narek.jobportal.service.EmployerService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -34,12 +35,12 @@ public class ProfileMvcController {
             ProfileUpdateDto profileForm = new ProfileUpdateDto();
             if (hasRole(authentication, "ROLE_EMPLOYER")) {
                 Employer employer = employerService.getEmployerByUserEmail(authentication.getName())
-                        .orElseThrow(() -> new RuntimeException("Employer profile not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Employer profile not found"));
                 profileForm.setCompanyName(employer.getCompanyName());
                 profileForm.setWebsite(employer.getWebsite());
             } else {
                 Candidate candidate = candidateService.getCandidateByUserEmail(authentication.getName())
-                        .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Candidate profile not found"));
                 profileForm.setFullName(candidate.getFullName());
                 profileForm.setResumeUrl(candidate.getResumeUrl());
             }

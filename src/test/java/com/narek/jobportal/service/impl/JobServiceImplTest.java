@@ -7,6 +7,7 @@ import com.narek.jobportal.entity.Job;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.AuthService;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -69,9 +70,9 @@ class JobServiceImplTest {
     void getJobById_shouldThrowException_whenJobMissing() {
         given(jobRepository.findById(99L)).willReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> jobService.getJobById(99L));
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> jobService.getJobById(99L));
 
-        assertEquals("Job not found", exception.getMessage());
+        assertEquals("Job not found with id 99", exception.getMessage());
         verify(jobRepository).findById(99L);
     }
 
@@ -106,9 +107,9 @@ class JobServiceImplTest {
     void deleteJob_shouldThrow_whenJobMissing() {
         given(jobRepository.findById(7L)).willReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> jobService.deleteJob(7L));
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> jobService.deleteJob(7L));
 
-        assertEquals("Job not found", exception.getMessage());
+        assertEquals("Job not found with id 7", exception.getMessage());
         verify(jobRepository, never()).delete(any(Job.class));
     }
 
@@ -133,9 +134,9 @@ class JobServiceImplTest {
     @Test
     void createJob_shouldPropagateException_whenCurrentEmployerUnavailable() {
         JobCreateUpdateDto dto = new JobCreateUpdateDto("Senior Java", "Build systems", 150_000d);
-        given(authService.getCurrentEmployer()).willThrow(new RuntimeException("Authenticated user not found"));
+        given(authService.getCurrentEmployer()).willThrow(new EntityNotFoundException("Authenticated user not found"));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> jobService.createJob(dto));
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> jobService.createJob(dto));
 
         assertEquals("Authenticated user not found", exception.getMessage());
         verify(jobRepository, never()).save(any(Job.class));
@@ -163,9 +164,9 @@ class JobServiceImplTest {
     void updateJob_shouldThrow_whenJobMissing() {
         given(jobRepository.findById(11L)).willReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> jobService.updateJob(11L, new JobCreateUpdateDto()));
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> jobService.updateJob(11L, new JobCreateUpdateDto()));
 
-        assertEquals("Job not found", exception.getMessage());
+        assertEquals("Job not found with id 11", exception.getMessage());
         verify(jobRepository, never()).save(any(Job.class));
     }
 
