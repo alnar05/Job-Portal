@@ -9,6 +9,9 @@ import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.AuthService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -51,6 +54,34 @@ class JobServiceImplTest {
         assertEquals("Java Engineer", result.get(0).getTitle());
         assertEquals("Globex", result.get(1).getCompanyName());
         verify(jobRepository).findAll();
+    }
+
+    @Test
+    void getAllJobs_withPagination_shouldReturnMappedPage() {
+        Job first = buildJob(1L, "Java Engineer", "Desc1", 100_000d, buildEmployer(10L, "Acme"));
+        Job second = buildJob(2L, "DevOps", "Desc2", 90_000d, buildEmployer(11L, "Globex"));
+        PageRequest pageable = PageRequest.of(0, 2);
+        given(jobRepository.findAll(pageable)).willReturn(new PageImpl<>(List.of(first, second), pageable, 2));
+
+        Page<JobResponseDto> result = jobService.getAllJobs(pageable);
+
+        assertEquals(2, result.getTotalElements());
+        assertEquals("Java Engineer", result.getContent().get(0).getTitle());
+        verify(jobRepository).findAll(pageable);
+    }
+
+    @Test
+    void searchJobs_shouldReturnMappedPage() {
+        Job match = buildJob(3L, "Java Backend", "Spring Boot role", 130_000d, buildEmployer(12L, "Initech"));
+        PageRequest pageable = PageRequest.of(0, 10);
+        given(jobRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase("java", "java", pageable))
+                .willReturn(new PageImpl<>(List.of(match), pageable, 1));
+
+        Page<JobResponseDto> result = jobService.searchJobs("java", pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Java Backend", result.getContent().get(0).getTitle());
+        verify(jobRepository).findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase("java", "java", pageable);
     }
 
     @Test
@@ -171,11 +202,8 @@ class JobServiceImplTest {
     }
 
     @Test
-    void createJob_shouldThrowNullPointerException_whenDtoIsNull() {
-        Employer currentEmployer = buildEmployer(55L, "Scale Ltd");
-        given(authService.getCurrentEmployer()).willReturn(currentEmployer);
-
-        assertThrows(NullPointerException.class, () -> jobService.createJob(null));
+    void createJob_shouldThrowIllegalArgumentException_whenDtoIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> jobService.createJob(null));
         verify(jobRepository, never()).save(any(Job.class));
     }
 

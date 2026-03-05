@@ -2,11 +2,13 @@ package com.narek.jobportal.controller.rest;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
-import com.narek.jobportal.entity.Job;
 import com.narek.jobportal.service.JobService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -20,11 +22,23 @@ public class JobController {
         this.jobService = jobService;
     }
 
-    // Get all jobs
+    // Get all jobs with pagination
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<JobResponseDto> getAllJobs() {
-        return jobService.getAllJobs();
+    public Page<JobResponseDto> getAllJobs(
+            @PageableDefault(sort = "createdAt") Pageable pageable
+    ) {
+        return jobService.getAllJobs(pageable);
+    }
+
+    // Search jobs by keyword in title/description
+    @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    public Page<JobResponseDto> searchJobs(
+            @RequestParam String keyword,
+            @PageableDefault(sort = "createdAt") Pageable pageable
+    ) {
+        return jobService.searchJobs(keyword, pageable);
     }
 
     // Get job by ID
