@@ -1,6 +1,9 @@
 package com.narek.jobportal.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,6 +12,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,9 +31,11 @@ public class Job {
     private Long id;
 
     @Column(nullable = false)
+    @NotBlank(message = "Title is required")
     private String title;
 
     @Column(nullable = false, length = 4000)
+    @NotBlank(message = "Description is required")
     private String description;
 
     @Column(nullable = false)
@@ -38,6 +44,20 @@ public class Job {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @NotNull(message = "Job type is required")
+    private JobType jobType;
+
+    @NotBlank(message = "Location is required")
+    @Column(nullable = false)
+    private String location;
+
+    @Future(message = "Closing date must be in the future")
+    @NotNull(message = "Closing date is required")
+    @Column(nullable = false)
+    private LocalDate closingDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employer_id", nullable = false)
@@ -49,5 +69,9 @@ public class Job {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    public boolean isExpired() {
+        return LocalDate.now().isAfter(closingDate);
     }
 }

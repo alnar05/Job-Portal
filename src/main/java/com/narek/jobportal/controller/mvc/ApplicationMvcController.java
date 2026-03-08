@@ -3,6 +3,7 @@ package com.narek.jobportal.controller.mvc;
 import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.Candidate;
+import com.narek.jobportal.exception.JobApplicationClosedException;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
@@ -59,6 +60,8 @@ public class ApplicationMvcController {
         try {
             applicationService.createApplication(dto);
             redirectAttributes.addFlashAttribute("successMessage", "Application submitted successfully.");
+        } catch (JobApplicationClosedException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         } catch (ResponseStatusException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getReason());
         }

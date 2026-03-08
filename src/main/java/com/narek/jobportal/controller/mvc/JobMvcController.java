@@ -68,7 +68,7 @@ public class JobMvcController {
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#id)")
     public String showEditForm(@PathVariable Long id, Model model) {
         JobResponseDto job = jobService.getJobById(id);
-        JobCreateUpdateDto jobForm = new JobCreateUpdateDto(job.getTitle(), job.getDescription(), job.getSalary());
+        JobCreateUpdateDto jobForm = new JobCreateUpdateDto(job.getTitle(), job.getDescription(), job.getSalary(), job.getJobType(), job.getLocation(), job.getClosingDate());
         model.addAttribute("jobId", id);
         model.addAttribute("jobForm", jobForm);
         return "jobs/edit";

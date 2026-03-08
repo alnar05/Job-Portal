@@ -7,6 +7,7 @@ import com.narek.jobportal.entity.ApplicationStatus;
 import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.entity.Job;
 import com.narek.jobportal.exception.DuplicateApplicationException;
+import com.narek.jobportal.exception.JobApplicationClosedException;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.ApplicationService;
@@ -42,6 +43,10 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + dto.getJobId()));
 
         Candidate candidate = authService.getCurrentCandidate();
+
+        if (job.isExpired()) {
+            throw new JobApplicationClosedException("Job application period has closed");
+        }
 
         // prevent duplicate applications
         if (applicationRepository.existsByJobIdAndCandidateId(dto.getJobId(), candidate.getId())) {
