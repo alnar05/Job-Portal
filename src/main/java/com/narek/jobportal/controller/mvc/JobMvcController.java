@@ -2,19 +2,21 @@ package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.JobService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/jobs")
@@ -28,8 +30,31 @@ public class JobMvcController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public String listJobs(Model model) {
-        model.addAttribute("jobs", jobService.getAllJobs());
+    public String listJobs(@RequestParam(required = false) String keyword,
+                           @RequestParam(required = false) String location,
+                           @RequestParam(required = false) JobType jobType,
+                           @RequestParam(required = false) Double minSalary,
+                           @RequestParam(required = false) Double maxSalary,
+                           @RequestParam(defaultValue = "0") int page,
+                           @RequestParam(defaultValue = "9") int size,
+                           Model model) {
+        Page<JobResponseDto> jobPage = jobService.searchJobs(
+                keyword,
+                location,
+                jobType,
+                minSalary,
+                maxSalary,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))
+        );
+
+        model.addAttribute("jobs", jobPage.getContent());
+        model.addAttribute("jobPage", jobPage);
+        model.addAttribute("jobTypes", List.of(JobType.values()));
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("location", location);
+        model.addAttribute("selectedJobType", jobType);
+        model.addAttribute("minSalary", minSalary);
+        model.addAttribute("maxSalary", maxSalary);
         return "jobs/list";
     }
 

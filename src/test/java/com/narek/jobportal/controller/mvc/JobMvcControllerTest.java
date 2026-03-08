@@ -2,6 +2,7 @@ package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -22,6 +26,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -60,12 +65,37 @@ class JobMvcControllerTest {
     @Test
     @WithMockUser(username = "cand", roles = {"CANDIDATE"})
     void listJobs_shouldRenderJobsList_whenAuthenticated() throws Exception {
-        given(jobService.getAllJobs()).willReturn(List.of(new JobResponseDto(1L, "Java", "Desc", 100.0, com.narek.jobportal.entity.JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME")));
+        JobResponseDto job = new JobResponseDto(1L, "Java", "Desc", 100.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME");
+        given(jobService.searchJobs(eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(job), PageRequest.of(0, 9), 1));
 
         mockMvc.perform(get("/jobs"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("jobs/list"))
-                .andExpect(model().attributeExists("jobs"));
+                .andExpect(model().attributeExists("jobs"))
+                .andExpect(model().attribute("keyword", (Object) null))
+                .andExpect(model().attribute("selectedJobType", (Object) null));
+    }
+
+    @Test
+    @WithMockUser(username = "cand", roles = {"CANDIDATE"})
+    void listJobs_shouldApplyFilters_whenQueryParametersProvided() throws Exception {
+        given(jobService.searchJobs(eq("java"), eq("Berlin"), eq(JobType.FULL_TIME), eq(1000.0), eq(5000.0), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 9), 0));
+
+        mockMvc.perform(get("/jobs")
+                        .param("keyword", "java")
+                        .param("location", "Berlin")
+                        .param("jobType", "FULL_TIME")
+                        .param("minSalary", "1000")
+                        .param("maxSalary", "5000"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("jobs/list"))
+                .andExpect(model().attribute("keyword", "java"))
+                .andExpect(model().attribute("location", "Berlin"))
+                .andExpect(model().attribute("selectedJobType", JobType.FULL_TIME))
+                .andExpect(model().attribute("minSalary", 1000.0))
+                .andExpect(model().attribute("maxSalary", 5000.0));
     }
 
     @Test

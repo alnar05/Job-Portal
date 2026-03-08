@@ -1,14 +1,13 @@
 package com.narek.jobportal;
 
-import com.narek.jobportal.entity.Application;
-import com.narek.jobportal.entity.Job;
-import com.narek.jobportal.entity.Role;
-import com.narek.jobportal.entity.User;
+import com.narek.jobportal.entity.*;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.CandidateRepository;
 import com.narek.jobportal.repository.EmployerRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -456,13 +457,18 @@ class JobPortalIntegrationTest {
         Long employerId = employerRepository.findByUserId(employerUser.getId()).orElseThrow().getId();
 
         Job closedJob = new Job();
-        closedJob.setTitle("Closed Job");
-        closedJob.setDescription("No more applications");
+        closedJob.setTitle("Expired Job");
+        closedJob.setDescription("Old job");
         closedJob.setSalary(1000.0);
-        closedJob.setJobType(com.narek.jobportal.entity.JobType.FULL_TIME);
+        closedJob.setJobType(JobType.FULL_TIME);
         closedJob.setLocation("Berlin");
-        closedJob.setClosingDate(java.time.LocalDate.now().minusDays(1));
+        closedJob.setClosingDate(LocalDate.now().plusDays(5)); // valid
         closedJob.setEmployer(employerRepository.findById(employerId).orElseThrow());
+
+        closedJob = jobRepository.save(closedJob);
+
+        // force expiration after persistence
+        closedJob.setClosingDate(LocalDate.now().minusDays(1));
         jobRepository.save(closedJob);
 
         String applyPayload = objectMapper.writeValueAsString(java.util.Map.of(
@@ -477,6 +483,25 @@ class JobPortalIntegrationTest {
                         .content(applyPayload))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Job application period has closed"));
+    }
+
+    @PersistenceContext
+    EntityManager em;
+
+    @Test
+    void expiredJobs_shouldNotAppearInSearchResults() throws Exception {
+        Job job = createValidJob();
+
+        // force expiration bypassing validation
+        em.createQuery("UPDATE Job j SET j.closingDate = :date WHERE j.id = :id")
+                .setParameter("date", LocalDate.now().minusDays(1))
+                .setParameter("id", job.getId())
+                .executeUpdate();
+
+        mockMvc.perform(get("/api/jobs/search")
+                        .with(user("search-candidate@example.com").roles("CANDIDATE")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty());
     }
 
     @Test
@@ -538,5 +563,31 @@ class JobPortalIntegrationTest {
                         .param("website", website))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));
+    }
+
+    private Job createValidJob() {
+        try {
+            registerEmployer("test-employer@example.com", "Test Corp", "https://test.example");
+        } catch (Exception e) {
+        }
+
+        User employerUser = userRepository.findByEmail("test-employer@example.com")
+                .orElseThrow();
+        Long employerId = employerRepository.findByUserId(employerUser.getId())
+                .orElseThrow()
+                .getId();
+        Employer employer = employerRepository.findById(employerId)
+                .orElseThrow();
+
+        Job job = new Job();
+        job.setTitle("Backend Developer");
+        job.setDescription("Spring Boot job for integration testing");
+        job.setSalary(2000.0);
+        job.setJobType(JobType.FULL_TIME);
+        job.setLocation("Berlin");
+        job.setClosingDate(LocalDate.now().plusDays(5)); // valid future date
+        job.setEmployer(employer);
+
+        return jobRepository.save(job);
     }
 }
