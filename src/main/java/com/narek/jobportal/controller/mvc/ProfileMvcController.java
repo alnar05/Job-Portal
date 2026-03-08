@@ -5,6 +5,7 @@ import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.service.CandidateService;
 import com.narek.jobportal.service.EmployerService;
+import com.narek.jobportal.service.ResumeService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +16,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -23,10 +26,14 @@ public class ProfileMvcController {
 
     private final CandidateService candidateService;
     private final EmployerService employerService;
+    private final ResumeService resumeService;
 
-    public ProfileMvcController(CandidateService candidateService, EmployerService employerService) {
+    public ProfileMvcController(CandidateService candidateService,
+                                EmployerService employerService,
+                                ResumeService resumeService) {
         this.candidateService = candidateService;
         this.employerService = employerService;
+        this.resumeService = resumeService;
     }
 
     @GetMapping("/profile/edit")
@@ -54,6 +61,7 @@ public class ProfileMvcController {
     @PostMapping("/profile/edit")
     public String updateProfile(@Valid @ModelAttribute("profileForm") ProfileUpdateDto profileForm,
                                 BindingResult bindingResult,
+                                @RequestParam(name = "resumeFile", required = false) MultipartFile resumeFile,
                                 Authentication authentication,
                                 Model model,
                                 RedirectAttributes redirectAttributes) {
@@ -68,7 +76,13 @@ public class ProfileMvcController {
             return "redirect:/dashboard/employer";
         }
 
-        candidateService.updateOwnProfile(profileForm, authentication.getName());
+        Candidate candidate = candidateService.updateOwnProfile(profileForm, authentication.getName());
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            candidate.setResumeFilePath(resumeService.storeResume(resumeFile));
+            candidate.setResumeFileName(resumeFile.getOriginalFilename());
+            candidate.setParsedResumeSummary(resumeService.parseResumeSummary(resumeFile));
+            candidateService.saveCandidate(candidate);
+        }
         redirectAttributes.addFlashAttribute("successMessage", "Candidate profile updated successfully.");
         return "redirect:/dashboard/candidate";
     }

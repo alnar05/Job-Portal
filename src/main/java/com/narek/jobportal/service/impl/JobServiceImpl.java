@@ -2,23 +2,27 @@ package com.narek.jobportal.service.impl;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
-import com.narek.jobportal.entity.Employer;
-import com.narek.jobportal.entity.Job;
-import com.narek.jobportal.entity.JobType;
+import com.narek.jobportal.dto.SavedSearchDto;
+import com.narek.jobportal.entity.*;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
+import com.narek.jobportal.repository.SavedSearchRepository;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
+import com.narek.jobportal.service.NotificationService;
 import com.narek.jobportal.specification.JobSpecification;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -28,14 +32,20 @@ public class JobServiceImpl implements JobService {
 
     private final JobRepository jobRepository;
     private final ApplicationRepository applicationRepository;
+    private final SavedSearchRepository savedSearchRepository;
     private final AuthService authService;
+    private final NotificationService notificationService;
 
     public JobServiceImpl(JobRepository jobRepository,
                           ApplicationRepository applicationRepository,
-                          AuthService authService) {
+                          SavedSearchRepository savedSearchRepository,
+                          AuthService authService,
+                          NotificationService notificationService) {
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
+        this.savedSearchRepository = savedSearchRepository;
         this.authService = authService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -48,12 +58,13 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Transactional
     public JobResponseDto getJobById(Long id) {
         logger.info("Fetching job by id={}", id);
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
-
-        return mapToResponse(job);
+        job.setViewCount(job.getViewCount() + 1);
+        return mapToResponse(jobRepository.save(job));
     }
 
     @Override
@@ -68,7 +79,6 @@ public class JobServiceImpl implements JobService {
     @Override
     @Transactional
     public void deleteJob(Long id) {
-        logger.info("Deleting job id={}", id);
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
         applicationRepository.deleteByJobId(job.getId());
@@ -77,7 +87,6 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public JobResponseDto createJob(JobCreateUpdateDto dto) {
-        logger.info("Creating job with title={}", dto.getTitle());
         Employer employer = authService.getCurrentEmployer();
 
         Job job = new Job();
@@ -90,7 +99,6 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public JobResponseDto updateJob(Long id, JobCreateUpdateDto dto) {
-        logger.info("Updating job id={}", id);
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
 
@@ -101,22 +109,91 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    public void closeJob(Long id) {
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
+        job.setStatus(JobStatus.CLOSED);
+        jobRepository.save(job);
+    }
+
+    @Override
     public Page<JobResponseDto> searchJobs(String keyword,
                                            String location,
                                            JobType jobType,
                                            Double minSalary,
                                            Double maxSalary,
+                                           String companyName,
+                                           SearchSortOption sortOption,
                                            Pageable pageable) {
-        logger.info("Searching jobs keyword={}, location={}, jobType={}, minSalary={}, maxSalary={}, page={}",
-                keyword, location, jobType, minSalary, maxSalary, pageable.getPageNumber());
 
         Specification<Job> spec = Specification.where(JobSpecification.notExpired())
                 .and(JobSpecification.hasKeyword(keyword))
                 .and(JobSpecification.hasLocation(location))
                 .and(JobSpecification.hasJobType(jobType))
-                .and(JobSpecification.overlapsSalaryRange(minSalary, maxSalary));
+                .and(JobSpecification.overlapsSalaryRange(minSalary, maxSalary))
+                .and(JobSpecification.hasCompanyName(companyName));
 
-        return jobRepository.findAll(spec, pageable).map(this::mapToResponse);
+        Pageable effective = pageable;
+        if (sortOption != null) {
+            Sort sort = switch (sortOption) {
+                case HIGHEST_SALARY -> Sort.by(Sort.Direction.DESC, "salary");
+                case CLOSING_DATE -> Sort.by(Sort.Direction.ASC, "closingDate");
+                default -> Sort.by(Sort.Direction.DESC, "createdAt");
+            };
+            int pageNumber = pageable.isPaged() ? pageable.getPageNumber() : 0;
+            int pageSize = pageable.isPaged() ? pageable.getPageSize() : 1000;
+            effective = org.springframework.data.domain.PageRequest.of(pageNumber, pageSize, sort);
+        }
+
+        return jobRepository.findAll(spec, effective).map(this::mapToResponse);
+    }
+
+    @Override
+    @Transactional
+    public SavedSearchDto saveSearch(SavedSearchDto dto) {
+        Candidate candidate = authService.getCurrentCandidate();
+        SavedSearch savedSearch = new SavedSearch();
+        savedSearch.setCandidate(candidate);
+        savedSearch.setName(dto.getName());
+        savedSearch.setKeyword(dto.getKeyword());
+        savedSearch.setLocation(dto.getLocation());
+        savedSearch.setCompanyName(dto.getCompanyName());
+        savedSearch.setJobType(dto.getJobType());
+        savedSearch.setMinSalary(dto.getMinSalary());
+        savedSearch.setMaxSalary(dto.getMaxSalary());
+        savedSearch.setSortOption(dto.getSortOption() == null ? SearchSortOption.NEWEST : dto.getSortOption());
+        SavedSearch saved = savedSearchRepository.save(savedSearch);
+        dto.setId(saved.getId());
+        return dto;
+    }
+
+    @Override
+    public List<SavedSearchDto> getSavedSearchesForCurrentCandidate() {
+        Candidate candidate = authService.getCurrentCandidate();
+        return savedSearchRepository.findByCandidateIdOrderByCreatedAtDesc(candidate.getId()).stream().map(saved -> {
+            SavedSearchDto dto = new SavedSearchDto();
+            dto.setId(saved.getId());
+            dto.setName(saved.getName());
+            dto.setKeyword(saved.getKeyword());
+            dto.setLocation(saved.getLocation());
+            dto.setCompanyName(saved.getCompanyName());
+            dto.setJobType(saved.getJobType());
+            dto.setMinSalary(saved.getMinSalary());
+            dto.setMaxSalary(saved.getMaxSalary());
+            dto.setSortOption(saved.getSortOption());
+            return dto;
+        }).toList();
+    }
+
+    @Override
+    @Scheduled(cron = "0 0 * * * *")
+    @Transactional
+    public void expireOverdueJobs() {
+        List<Job> overdue = jobRepository.findByStatusAndClosingDateBefore(JobStatus.OPEN, LocalDate.now());
+        for (Job job : overdue) {
+            job.setStatus(JobStatus.EXPIRED);
+            notificationService.notify(job.getEmployer().getUser(), "Job expired", "Job '" + job.getTitle() + "' has expired.");
+        }
     }
 
     private void applyDto(Job job, JobCreateUpdateDto dto) {
@@ -138,6 +215,9 @@ public class JobServiceImpl implements JobService {
         dto.setLocation(job.getLocation());
         dto.setClosingDate(job.getClosingDate());
         dto.setCompanyName(job.getEmployer().getCompanyName());
+        dto.setStatus(job.getStatus());
+        dto.setViewCount(job.getViewCount());
+        dto.setApplicationCount(applicationRepository.countByJobId(job.getId()));
         return dto;
     }
 

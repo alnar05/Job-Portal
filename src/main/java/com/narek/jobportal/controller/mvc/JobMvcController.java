@@ -2,14 +2,14 @@ package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.dto.SavedSearchDto;
 import com.narek.jobportal.entity.JobType;
+import com.narek.jobportal.entity.SearchSortOption;
 import com.narek.jobportal.service.JobService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -35,27 +35,38 @@ public class JobMvcController {
                            @RequestParam(required = false) JobType jobType,
                            @RequestParam(required = false) Double minSalary,
                            @RequestParam(required = false) Double maxSalary,
+                           @RequestParam(required = false) String companyName,
+                           @RequestParam(defaultValue = "NEWEST") SearchSortOption sort,
                            @RequestParam(defaultValue = "0") int page,
                            @RequestParam(defaultValue = "9") int size,
                            Model model) {
         Page<JobResponseDto> jobPage = jobService.searchJobs(
-                keyword,
-                location,
-                jobType,
-                minSalary,
-                maxSalary,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))
+                keyword, location, jobType, minSalary, maxSalary, companyName, sort,
+                PageRequest.of(page, size)
         );
 
         model.addAttribute("jobs", jobPage.getContent());
         model.addAttribute("jobPage", jobPage);
         model.addAttribute("jobTypes", List.of(JobType.values()));
+        model.addAttribute("sortOptions", List.of(SearchSortOption.values()));
         model.addAttribute("keyword", keyword);
         model.addAttribute("location", location);
+        model.addAttribute("companyName", companyName);
         model.addAttribute("selectedJobType", jobType);
         model.addAttribute("minSalary", minSalary);
         model.addAttribute("maxSalary", maxSalary);
+        model.addAttribute("selectedSort", sort);
+        model.addAttribute("savedSearches", getSavedSearchesSafe());
         return "jobs/list";
+    }
+
+    @PostMapping("/save-search")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public String saveSearch(@ModelAttribute SavedSearchDto savedSearchDto,
+                             RedirectAttributes redirectAttributes) {
+        jobService.saveSearch(savedSearchDto);
+        redirectAttributes.addFlashAttribute("successMessage", "Search saved successfully.");
+        return "redirect:/jobs";
     }
 
     @GetMapping("/{id}")
@@ -89,6 +100,14 @@ public class JobMvcController {
         return "redirect:/jobs";
     }
 
+    @PostMapping("/{id}/close")
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#id)")
+    public String closeJob(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        jobService.closeJob(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Job closed successfully.");
+        return "redirect:/jobs/" + id;
+    }
+
     @GetMapping("/edit/{id}")
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#id)")
     public String showEditForm(@PathVariable Long id, Model model) {
@@ -118,14 +137,17 @@ public class JobMvcController {
 
     @PostMapping("/delete/{id}")
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#id)")
-    public String deleteJob(@PathVariable Long id,
-                            Authentication authentication,
-                            RedirectAttributes redirectAttributes) {
+    public String deleteJob(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         jobService.deleteJob(id);
         redirectAttributes.addFlashAttribute("successMessage", "Job deleted successfully.");
-        boolean isEmployer = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYER"));
+        return "redirect:/jobs";
+    }
 
-        return isEmployer ? "redirect:/employer/dashboard" : "redirect:/jobs";
+    private List<SavedSearchDto> getSavedSearchesSafe() {
+        try {
+            return jobService.getSavedSearchesForCurrentCandidate();
+        } catch (Exception ex) {
+            return List.of();
+        }
     }
 }

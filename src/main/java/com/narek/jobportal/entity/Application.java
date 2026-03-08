@@ -31,6 +31,9 @@ public class Application {
     @Column(length = 4000)
     private String coverLetter;
 
+    @Column(length = 2000)
+    private String internalNotes;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
     private Job job;

@@ -56,6 +56,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setEnabled(true);
+        user.setStatus(com.narek.jobportal.entity.UserStatus.ACTIVE);
         user.setRoles(Set.of(dto.getRole()));
 
         User savedUser = userRepository.save(user);

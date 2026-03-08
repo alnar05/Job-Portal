@@ -1,49 +1,28 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <th:block th:replace="~{layout :: head('Job Applications | Job Portal')}"></th:block>
-</head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{layout :: head('Job Applications | Job Portal')}"></th:block></head>
 <body class="bg-light">
 <div th:replace="~{layout :: navbar}"></div>
-<div th:replace="~{layout :: flash-messages}"></div>
-
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0">Applications for <span th:text="${job.title}"></span></h2>
-        <a th:href="@{/employer/dashboard}" class="btn btn-outline-secondary">Back to Dashboard</a>
-    </div>
-    <div class="card shadow-sm" th:if="${!#lists.isEmpty(applications)}">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                <tr>
-                    <th>ID</th>
-                    <th>Candidate</th>
-                    <th>Applied At</th>
-                    <th>Status</th>
-                    <th>Cover Letter</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="app : ${applications}">
-                    <td th:text="${app.id}"></td>
-                    <td th:text="${app.candidateName}"></td>
-                    <td th:text="${#temporals.format(app.appliedAt, 'yyyy-MM-dd HH:mm')}"></td>
-                    <td><span class="badge text-bg-secondary" th:text="${app.status}"></span></td>
-                    <td th:text="${app.coverLetter != null && !app.coverLetter.isBlank() ? app.coverLetter : '-'}"></td>
-
-                    <td>
-                        <a th:href="@{/applications/{id}(id=${app.id})}" class="btn btn-sm btn-outline-primary">View</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+    <h2>Applications for <span th:text="${job.title}"></span></h2>
+    <form method="post" th:action="@{/applications/bulk}">
+        <input type="hidden" name="jobId" th:value="${job.id}">
+        <div class="mb-2 d-flex gap-2">
+            <button class="btn btn-success btn-sm" name="accept" value="true">Bulk Accept</button>
+            <button class="btn btn-danger btn-sm" name="accept" value="false">Bulk Reject</button>
+            <input class="form-control" name="internalNotes" placeholder="Optional internal note">
         </div>
-    </div>
-    <div class="alert alert-info" th:if="${#lists.isEmpty(applications)}">No applications received for this job yet.</div>
+        <table class="table table-bordered">
+            <thead><tr><th>Select</th><th>Candidate</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+            <tbody><tr th:each="app : ${applications}">
+                <td><input type="checkbox" name="applicationIds" th:value="${app.id}"></td>
+                <td th:text="${app.candidateName}"></td>
+                <td th:text="${app.status}"></td>
+                <td th:text="${app.internalNotes}"></td>
+                <td><a th:href="@{/applications/{id}(id=${app.id})}" class="btn btn-sm btn-outline-primary">View</a></td>
+            </tr></tbody>
+        </table>
+    </form>
 </div>
-
-<th:block th:replace="~{layout :: scripts}"></th:block>
 </body>
 </html>

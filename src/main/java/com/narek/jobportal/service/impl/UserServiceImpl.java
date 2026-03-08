@@ -2,6 +2,7 @@ package com.narek.jobportal.service.impl;
 
 import com.narek.jobportal.entity.Role;
 import com.narek.jobportal.entity.User;
+import com.narek.jobportal.entity.UserStatus;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.UserRepository;
 import com.narek.jobportal.service.UserService;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Optional;
 
 @Service
@@ -62,6 +64,38 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
         user.setEnabled(enabled);
+        user.setStatus(enabled ? UserStatus.ACTIVE : UserStatus.DISABLED);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateStatus(Long id, UserStatus status) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
+        user.setStatus(status);
+        user.setEnabled(status == UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateRoles(Long id, Role role, boolean add) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
+        HashSet<Role> roles = new HashSet<>(user.getRoles());
+        if (add) {
+            roles.add(role);
+        } else {
+            roles.remove(role);
+        }
+        user.setRoles(roles);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void resetPassword(Long id, String encodedPassword) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
+        user.setPassword(encodedPassword);
         userRepository.save(user);
     }
 }
