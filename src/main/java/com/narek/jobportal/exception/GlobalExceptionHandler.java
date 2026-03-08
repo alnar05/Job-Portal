@@ -106,4 +106,18 @@ public class GlobalExceptionHandler {
     }
 
 
+
+
+    @ExceptionHandler(JobApplicationClosedException.class)
+    public ResponseEntity<ApiErrorResponse> handleJobApplicationClosed(JobApplicationClosedException ex,
+                                                                       HttpServletRequest request) {
+        ApiErrorResponse response = new ApiErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }

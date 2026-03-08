@@ -63,7 +63,10 @@ class JobPortalIntegrationTest {
                 {
                   "title": "Senior Java Engineer",
                   "description": "Build secure Spring Boot backend systems.",
-                  "salary": 155000.0
+                  "salary": 155000.0,
+                  "jobType": "FULL_TIME",
+                  "location": "Berlin",
+                  "closingDate": "2099-12-31"
                 }
                 """;
 
@@ -116,7 +119,10 @@ class JobPortalIntegrationTest {
                 {
                   "title": "Platform Engineer",
                   "description": "Maintain cloud-native recruitment platform.",
-                  "salary": 140000.0
+                  "salary": 140000.0,
+                  "jobType": "FULL_TIME",
+                  "location": "Berlin",
+                  "closingDate": "2099-12-31"
                 }
                 """;
 
@@ -136,7 +142,10 @@ class JobPortalIntegrationTest {
                 {
                   "title": "Principal Platform Engineer",
                   "description": "Own architecture and delivery of hiring platform.",
-                  "salary": 170000.0
+                  "salary": 170000.0,
+                  "jobType": "FULL_TIME",
+                  "location": "Berlin",
+                  "closingDate": "2099-12-31"
                 }
                 """;
 
@@ -172,7 +181,10 @@ class JobPortalIntegrationTest {
                 {
                   "title": "Security Engineer",
                   "description": "Protect APIs and data.",
-                  "salary": 135000.0
+                  "salary": 135000.0,
+                  "jobType": "FULL_TIME",
+                  "location": "Berlin",
+                  "closingDate": "2099-12-31"
                 }
                 """;
 
@@ -225,7 +237,10 @@ class JobPortalIntegrationTest {
                 {
                   "title": "Backend Developer",
                   "description": "Build APIs that handle high traffic.",
-                  "salary": 120000.0
+                  "salary": 120000.0,
+                  "jobType": "FULL_TIME",
+                  "location": "Berlin",
+                  "closingDate": "2099-12-31"
                 }
                 """;
 
@@ -278,7 +293,10 @@ class JobPortalIntegrationTest {
         String createJobPayload = objectMapper.writeValueAsString(java.util.Map.of(
                 "title", "Owned Job",
                 "description", "Job belongs to owner employer",
-                "salary", 95000.0
+                "salary", 95000.0,
+                "jobType", "FULL_TIME",
+                "location", "Berlin",
+                "closingDate", "2099-12-31"
         ));
 
         mockMvc.perform(post("/api/jobs")
@@ -310,7 +328,10 @@ class JobPortalIntegrationTest {
         String createJobPayload = objectMapper.writeValueAsString(java.util.Map.of(
                 "title", "API Developer",
                 "description", "Build Java APIs",
-                "salary", 110000.0
+                "salary", 110000.0,
+                "jobType", "FULL_TIME",
+                "location", "Berlin",
+                "closingDate", "2099-12-31"
         ));
 
         mockMvc.perform(post("/api/jobs")
@@ -362,7 +383,10 @@ class JobPortalIntegrationTest {
         String invalidPayload = objectMapper.writeValueAsString(java.util.Map.of(
                 "title", "",
                 "description", "",
-                "salary", 0
+                "salary", 0,
+                "jobType", "FULL_TIME",
+                "location", "",
+                "closingDate", "2099-12-31"
         ));
 
         // When / Then
@@ -372,6 +396,87 @@ class JobPortalIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidPayload))
                 .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void search_shouldFilterByCombinedCriteria_andExcludeExpiredJobs() throws Exception {
+        registerEmployer("search-employer@example.com", "Search Corp", "https://search.example");
+
+        String validJobPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "title", "Java Engineer",
+                "description", "Spring and Java role",
+                "salary", 5000.0,
+                "jobType", "FULL_TIME",
+                "location", "Berlin, Germany",
+                "closingDate", "2099-12-31"
+        ));
+
+        String expiredJobPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "title", "Java Legacy",
+                "description", "Legacy Java role",
+                "salary", 5000.0,
+                "jobType", "FULL_TIME",
+                "location", "Berlin",
+                "closingDate", "2000-01-01"
+        ));
+
+        mockMvc.perform(post("/api/jobs")
+                        .with(user("search-employer@example.com").roles("EMPLOYER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJobPayload))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/jobs")
+                        .with(user("search-employer@example.com").roles("EMPLOYER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(expiredJobPayload))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/jobs/search")
+                        .with(user("search-employer@example.com").roles("EMPLOYER"))
+                        .param("query", "java")
+                        .param("location", "berlin")
+                        .param("jobType", "FULL_TIME")
+                        .param("minSalary", "3000")
+                        .param("maxSalary", "6000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Java Engineer"));
+    }
+
+    @Test
+    void applying_afterClosingDate_shouldFail() throws Exception {
+        registerEmployer("closed-employer@example.com", "Closed Corp", "https://closed.example");
+        registerCandidate("closed-candidate@example.com", "Closed Candidate", "https://resume.example/closed");
+
+        User employerUser = userRepository.findByEmail("closed-employer@example.com").orElseThrow();
+        Long employerId = employerRepository.findByUserId(employerUser.getId()).orElseThrow().getId();
+
+        Job closedJob = new Job();
+        closedJob.setTitle("Closed Job");
+        closedJob.setDescription("No more applications");
+        closedJob.setSalary(1000.0);
+        closedJob.setJobType(com.narek.jobportal.entity.JobType.FULL_TIME);
+        closedJob.setLocation("Berlin");
+        closedJob.setClosingDate(java.time.LocalDate.now().minusDays(1));
+        closedJob.setEmployer(employerRepository.findById(employerId).orElseThrow());
+        jobRepository.save(closedJob);
+
+        String applyPayload = objectMapper.writeValueAsString(java.util.Map.of(
+                "jobId", closedJob.getId(),
+                "coverLetter", "Trying to apply after close"
+        ));
+
+        mockMvc.perform(post("/api/applications")
+                        .with(user("closed-candidate@example.com").roles("CANDIDATE"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Job application period has closed"));
     }
 
     @Test

@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +60,7 @@ class JobMvcControllerTest {
     @Test
     @WithMockUser(username = "cand", roles = {"CANDIDATE"})
     void listJobs_shouldRenderJobsList_whenAuthenticated() throws Exception {
-        given(jobService.getAllJobs()).willReturn(List.of(new JobResponseDto(1L, "Java", "Desc", 100.0, "ACME")));
+        given(jobService.getAllJobs()).willReturn(List.of(new JobResponseDto(1L, "Java", "Desc", 100.0, com.narek.jobportal.entity.JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME")));
 
         mockMvc.perform(get("/jobs"))
                 .andExpect(status().isOk())
@@ -76,7 +77,7 @@ class JobMvcControllerTest {
     @Test
     @WithMockUser(username = "cand", roles = {"CANDIDATE"})
     void jobDetails_shouldRenderDetails_whenAuthenticated() throws Exception {
-        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "QA", "Tests", 90.0, "Globex"));
+        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "QA", "Tests", 90.0, com.narek.jobportal.entity.JobType.CONTRACT, "Paris", LocalDate.now().plusDays(7), "Globex"));
 
         mockMvc.perform(get("/jobs/2"))
                 .andExpect(status().isOk())
@@ -91,7 +92,10 @@ class JobMvcControllerTest {
                         .with(csrf())
                         .param("title", "Java")
                         .param("description", "Backend")
-                        .param("salary", "1000"))
+                        .param("salary", "1000")
+                        .param("jobType", "FULL_TIME")
+                        .param("location", "Berlin")
+                        .param("closingDate", "2099-12-31"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/jobs"))
                 .andExpect(flash().attribute("successMessage", "Job posted successfully."));
@@ -106,7 +110,10 @@ class JobMvcControllerTest {
                         .with(csrf())
                         .param("title", "")
                         .param("description", "")
-                        .param("salary", ""))
+                        .param("salary", "")
+                        .param("jobType", "")
+                        .param("location", "")
+                        .param("closingDate", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("jobs/create"));
     }
@@ -118,7 +125,10 @@ class JobMvcControllerTest {
                         .with(csrf())
                         .param("title", "Java")
                         .param("description", "Backend")
-                        .param("salary", "1000"))
+                        .param("salary", "1000")
+                        .param("jobType", "FULL_TIME")
+                        .param("location", "Berlin")
+                        .param("closingDate", "2099-12-31"))
                 .andExpect(status().isForbidden());
     }
 
@@ -129,7 +139,10 @@ class JobMvcControllerTest {
                         .with(csrf())
                         .param("title", "Updated")
                         .param("description", "Updated desc")
-                        .param("salary", "5000"))
+                        .param("salary", "5000")
+                        .param("jobType", "CONTRACT")
+                        .param("location", "Yerevan")
+                        .param("closingDate", "2099-12-31"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/jobs/8"))
                 .andExpect(flash().attribute("successMessage", "Job updated successfully."));
@@ -144,7 +157,10 @@ class JobMvcControllerTest {
                         .with(csrf())
                         .param("title", "")
                         .param("description", "")
-                        .param("salary", ""))
+                        .param("salary", "")
+                        .param("jobType", "")
+                        .param("location", "")
+                        .param("closingDate", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("jobs/edit"));
     }

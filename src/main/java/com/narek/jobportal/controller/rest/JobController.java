@@ -2,13 +2,15 @@ package com.narek.jobportal.controller.rest;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.JobService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -22,23 +24,36 @@ public class JobController {
         this.jobService = jobService;
     }
 
-    // Get all jobs with pagination
+    // Get all jobs
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public Page<JobResponseDto> getAllJobs(
-            @PageableDefault(sort = "createdAt") Pageable pageable
-    ) {
-        return jobService.getAllJobs(pageable);
+    public List<JobResponseDto> getAllJobs(@RequestParam(required = false) String query,
+                                           @RequestParam(required = false) String location,
+                                           @RequestParam(required = false) JobType jobType,
+                                           @RequestParam(required = false) Double minSalary,
+                                           @RequestParam(required = false) Double maxSalary) {
+        if (query != null || location != null || jobType != null || minSalary != null || maxSalary != null) {
+            return jobService.searchJobs(query, location, jobType, minSalary, maxSalary, Pageable.unpaged()).getContent();
+        }
+        return jobService.getAllJobs();
     }
 
-    // Search jobs by keyword in title/description
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
-    public Page<JobResponseDto> searchJobs(
-            @RequestParam String keyword,
-            @PageableDefault(sort = "createdAt") Pageable pageable
-    ) {
-        return jobService.searchJobs(keyword, pageable);
+    public Page<JobResponseDto> searchJobs(@RequestParam(required = false) String query,
+                                           @RequestParam(required = false) String location,
+                                           @RequestParam(required = false) JobType jobType,
+                                           @RequestParam(required = false) Double minSalary,
+                                           @RequestParam(required = false) Double maxSalary,
+                                           @RequestParam(defaultValue = "0") int page,
+                                           @RequestParam(defaultValue = "10") int size,
+                                           @RequestParam(defaultValue = "id,desc") String[] sort) {
+        Sort.Direction direction = sort.length > 1 && "asc".equalsIgnoreCase(sort[1])
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort[0]));
+
+        return jobService.searchJobs(query, location, jobType, minSalary, maxSalary, pageable);
     }
 
     // Get job by ID
