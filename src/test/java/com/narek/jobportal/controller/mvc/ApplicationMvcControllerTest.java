@@ -123,7 +123,7 @@ class ApplicationMvcControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void applicationsForJob_shouldRenderView_whenAdmin() throws Exception {
-        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "Java", "Desc", 1000.0, "ACME"));
+        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "Java", "Desc", 1000.0, com.narek.jobportal.entity.JobType.FULL_TIME, "Berlin", java.time.LocalDate.now().plusDays(10), "ACME"));
         given(applicationService.getApplicationsByJobId(2L)).willReturn(List.of());
 
         mockMvc.perform(get("/applications/job/2"))

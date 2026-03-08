@@ -36,7 +36,10 @@ class GlobalExceptionHandlerTest {
             {
               "title": "",
               "description": "",
-              "salary": -100
+              "salary": -100,
+              "jobType": "FULL_TIME",
+              "location": "",
+              "closingDate": "2099-12-31"
             }
             """;
 
