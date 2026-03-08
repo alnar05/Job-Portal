@@ -20,6 +20,7 @@ public class ApplicationResponseDto {
     private Long candidateId;
     private String candidateName;
     private String coverLetter;
+    private String internalNotes;
     private LocalDateTime appliedAt;
     private ApplicationStatus status;
 }

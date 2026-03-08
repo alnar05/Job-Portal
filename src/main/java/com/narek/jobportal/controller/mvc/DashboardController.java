@@ -3,6 +3,7 @@ package com.narek.jobportal.controller.mvc;
 import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.entity.Role;
+import com.narek.jobportal.entity.User;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
@@ -60,6 +61,7 @@ public class DashboardController {
         model.addAttribute("totalApplications", applicationService.getAllApplications().size());
         model.addAttribute("employerUsers", userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 5)).getContent());
         model.addAttribute("candidateUsers", userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 5)).getContent());
+        model.addAttribute("allUsers", userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 50)).getContent());
         return "dashboard/admin";
     }
 
@@ -67,7 +69,10 @@ public class DashboardController {
     @PreAuthorize("hasRole('EMPLOYER')")
     public String employerDashboard(Model model) {
         Employer employer = authService.getCurrentEmployer();
-        model.addAttribute("jobs", jobService.getJobsByEmployerId(employer.getId()));
+        var jobs = jobService.getJobsByEmployerId(employer.getId());
+        model.addAttribute("jobs", jobs);
+        model.addAttribute("totalViews", jobs.stream().mapToLong(j -> j.getViewCount() == null ? 0 : j.getViewCount()).sum());
+        model.addAttribute("totalApplications", jobs.stream().mapToLong(j -> j.getApplicationCount() == null ? 0 : j.getApplicationCount()).sum());
         return "dashboard/employer";
     }
 

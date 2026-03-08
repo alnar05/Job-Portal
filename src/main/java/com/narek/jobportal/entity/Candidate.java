@@ -22,6 +22,13 @@ public class Candidate {
 
     private String resumeUrl;
 
+    private String resumeFilePath;
+
+    private String resumeFileName;
+
+    @Column(length = 500)
+    private String parsedResumeSummary;
+
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;

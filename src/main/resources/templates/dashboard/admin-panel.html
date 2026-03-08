@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{layout :: head('Admin Panel')}"></th:block></head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div class="container-fluid mt-3">
+    <div class="row">
+        <aside class="col-md-2">
+            <div class="list-group">
+                <a class="list-group-item">Users</a><a class="list-group-item">Jobs</a><a class="list-group-item">Applications</a><a class="list-group-item">Reports</a><a class="list-group-item">Settings</a>
+            </div>
+        </aside>
+        <main class="col-md-10">
+            <h3>Users</h3>
+            <table class="table table-sm"><tr><th>Email</th><th>Status</th><th>Actions</th></tr>
+                <tr th:each="u : ${users}">
+                    <td th:text="${u.email}"></td><td th:text="${u.status}"></td>
+                    <td>
+                        <form th:action="@{/admin/users/{id}/status(id=${u.id})}" method="post" class="d-flex gap-1">
+                            <select name="status" class="form-select form-select-sm"><option>ACTIVE</option><option>DISABLED</option><option>BANNED</option></select>
+                            <button class="btn btn-sm btn-outline-primary">Update</button>
+                        </form>
+                    </td>
+                </tr>
+            </table>
+
+            <h3>Jobs</h3>
+            <table class="table table-sm"><tr><th>Title</th><th>Employer</th><th>Status</th><th>Actions</th></tr>
+                <tr th:each="j : ${jobs}"><td th:text="${j.title}"></td><td th:text="${j.companyName}"></td><td th:text="${j.status}"></td>
+                    <td><form th:action="@{/admin/jobs/{id}/close(id=${j.id})}" method="post"><button class="btn btn-sm btn-outline-danger">Close</button></form></td></tr>
+            </table>
+
+            <h3>Applications</h3>
+            <table class="table table-sm"><tr><th>Candidate</th><th>Job</th><th>Status</th></tr>
+                <tr th:each="a : ${applications}"><td th:text="${a.candidateName}"></td><td th:text="${a.jobTitle}"></td><td th:text="${a.status}"></td></tr>
+            </table>
+        </main>
+    </div>
+</div>
+</body>
+</html>

@@ -1,26 +1,25 @@
 package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
+import com.narek.jobportal.dto.BulkApplicationActionDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.Candidate;
 import com.narek.jobportal.exception.JobApplicationClosedException;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
+import com.narek.jobportal.service.CandidateService;
 import com.narek.jobportal.service.JobService;
+import com.narek.jobportal.service.ResumeService;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
-
-import jakarta.validation.Validator;
 
 @Controller
 @RequestMapping("/applications")
@@ -29,15 +28,21 @@ public class ApplicationMvcController {
     private final ApplicationService applicationService;
     private final AuthService authService;
     private final JobService jobService;
+    private final ResumeService resumeService;
+    private final CandidateService candidateService;
     private final Validator validator;
 
     public ApplicationMvcController(ApplicationService applicationService,
                                     AuthService authService,
                                     JobService jobService,
+                                    ResumeService resumeService,
+                                    CandidateService candidateService,
                                     Validator validator) {
         this.applicationService = applicationService;
         this.authService = authService;
         this.jobService = jobService;
+        this.resumeService = resumeService;
+        this.candidateService = candidateService;
         this.validator = validator;
     }
 
@@ -45,6 +50,7 @@ public class ApplicationMvcController {
     @PreAuthorize("hasRole('CANDIDATE')")
     public String applyForJob(@PathVariable Long jobId,
                               @RequestParam(name = "coverLetter", required = false) String coverLetter,
+                              @RequestParam(name = "resumeFile", required = false) MultipartFile resumeFile,
                               RedirectAttributes redirectAttributes) {
         ApplicationCreateUpdateDto dto = new ApplicationCreateUpdateDto();
         dto.setJobId(jobId);
@@ -57,6 +63,14 @@ public class ApplicationMvcController {
             return "redirect:/jobs/" + jobId;
         }
 
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            Candidate candidate = authService.getCurrentCandidate();
+            candidate.setResumeFilePath(resumeService.storeResume(resumeFile));
+            candidate.setResumeFileName(resumeFile.getOriginalFilename());
+            candidate.setParsedResumeSummary(resumeService.parseResumeSummary(resumeFile));
+            candidateService.saveCandidate(candidate);
+        }
+
         try {
             applicationService.createApplication(dto);
             redirectAttributes.addFlashAttribute("successMessage", "Application submitted successfully.");
@@ -67,6 +81,26 @@ public class ApplicationMvcController {
         }
 
         return "redirect:/jobs/" + jobId;
+    }
+
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    public String bulkAction(@ModelAttribute BulkApplicationActionDto dto,
+                             @RequestParam Long jobId,
+                             RedirectAttributes redirectAttributes) {
+        applicationService.bulkUpdateStatus(dto.getApplicationIds(), dto.getAccept(), dto.getInternalNotes());
+        redirectAttributes.addFlashAttribute("successMessage", "Bulk update completed.");
+        return "redirect:/applications/job/" + jobId;
+    }
+
+    @PostMapping("/{id}/notes")
+    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    public String addNotes(@PathVariable Long id,
+                           @RequestParam String internalNotes,
+                           RedirectAttributes redirectAttributes) {
+        applicationService.addInternalNotes(id, internalNotes);
+        redirectAttributes.addFlashAttribute("successMessage", "Internal notes updated.");
+        return "redirect:/applications/" + id;
     }
 
     @GetMapping("/my")

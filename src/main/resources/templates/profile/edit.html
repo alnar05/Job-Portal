@@ -8,46 +8,20 @@
 <div th:replace="~{layout :: flash-messages}"></div>
 
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white"><strong>Edit Profile</strong></div>
-                <div class="card-body">
-                    <form th:action="@{/profile/edit}" th:object="${profileForm}" method="post">
-                        <div th:if="${isEmployer}">
-                            <div class="mb-3">
-                                <label for="companyName" class="form-label">Company Name</label>
-                                <input id="companyName" type="text" class="form-control" th:field="*{companyName}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('companyName')}" th:errors="*{companyName}"></div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="website" class="form-label">Website</label>
-                                <input id="website" type="text" class="form-control" th:field="*{website}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('website')}" th:errors="*{website}"></div>
-                            </div>
-                        </div>
-
-                        <div th:unless="${isEmployer}">
-                            <div class="mb-3">
-                                <label for="fullName" class="form-label">Full Name</label>
-                                <input id="fullName" type="text" class="form-control" th:field="*{fullName}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="resumeUrl" class="form-label">Resume URL</label>
-                                <input id="resumeUrl" type="text" class="form-control" th:field="*{resumeUrl}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('resumeUrl')}" th:errors="*{resumeUrl}"></div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </form>
-                </div>
+    <div class="card shadow-sm"><div class="card-body">
+        <form th:action="@{/profile/edit}" th:object="${profileForm}" method="post" enctype="multipart/form-data">
+            <div th:if="${isEmployer}">
+                <input class="form-control mb-2" th:field="*{companyName}" placeholder="Company Name">
+                <input class="form-control mb-2" th:field="*{website}" placeholder="Website">
             </div>
-        </div>
-    </div>
+            <div th:unless="${isEmployer}">
+                <input class="form-control mb-2" th:field="*{fullName}" placeholder="Full Name">
+                <input class="form-control mb-2" th:field="*{resumeUrl}" placeholder="Resume URL">
+                <input class="form-control mb-2" type="file" name="resumeFile" accept=".pdf,.doc,.docx">
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div></div>
 </div>
-
-<th:block th:replace="~{layout :: scripts}"></th:block>
 </body>
 </html>

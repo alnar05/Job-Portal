@@ -38,6 +38,16 @@ public final class JobSpecification {
         };
     }
 
+    public static Specification<Job> hasCompanyName(String companyName) {
+        return (root, query, cb) -> {
+            if (companyName == null || companyName.isBlank()) {
+                return cb.conjunction();
+            }
+            String like = "%" + companyName.toLowerCase() + "%";
+            return cb.like(cb.lower(root.get("employer").get("companyName")), like);
+        };
+    }
+
     public static Specification<Job> hasJobType(JobType jobType) {
         return (root, query, cb) -> jobType == null
                 ? cb.conjunction()

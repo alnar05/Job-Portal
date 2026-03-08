@@ -59,6 +59,13 @@ public class Job {
     @Column(nullable = false)
     private LocalDate closingDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private JobStatus status = JobStatus.OPEN;
+
+    @Column(nullable = false)
+    private Long viewCount = 0L;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employer_id", nullable = false)
     private Employer employer;

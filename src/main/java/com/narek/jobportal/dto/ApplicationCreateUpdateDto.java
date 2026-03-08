@@ -18,4 +18,7 @@ public class ApplicationCreateUpdateDto {
 
     @WordCount(max = 200, message = "Cover letter must be 200 words or fewer")
     private String coverLetter;
+
+    @WordCount(max = 300, message = "Internal notes must be 300 words or fewer")
+    private String internalNotes;
 }

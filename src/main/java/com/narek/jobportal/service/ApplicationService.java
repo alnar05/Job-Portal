@@ -2,6 +2,7 @@ package com.narek.jobportal.service;
 
 import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
 import com.narek.jobportal.dto.ApplicationResponseDto;
+
 import java.util.List;
 
 public interface ApplicationService {
@@ -25,4 +26,10 @@ public interface ApplicationService {
     ApplicationResponseDto acceptApplication(Long applicationId);
 
     ApplicationResponseDto rejectApplication(Long applicationId);
+
+    void bulkUpdateStatus(List<Long> ids, boolean accept, String internalNotes);
+
+    ApplicationResponseDto addInternalNotes(Long applicationId, String internalNotes);
+
+    void autoRejectExpiredJobApplications();
 }
