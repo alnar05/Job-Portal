@@ -7,32 +7,13 @@
 <div th:replace="~{layout :: navbar}"></div>
 <div th:replace="~{layout :: flash-messages}"></div>
 
-<div class="container" th:if="${adminOverview}">
-    <h2 class="mb-3">Admin Overview</h2>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Total Jobs</h5>
-                    <p class="display-6 mb-0" th:text="${totalJobs}"></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Total Applications</h5>
-                    <p class="display-6 mb-0" th:text="${totalApplications}"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="container" th:unless="${adminOverview}">
+<div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">Employer Dashboard</h2>
-        <a th:href="@{/jobs/create}" class="btn btn-primary">Post Job</a>
+        <div class="d-flex gap-2">
+            <a th:href="@{/profile/edit}" class="btn btn-outline-secondary">Edit Profile</a>
+            <a th:href="@{/jobs/create}" class="btn btn-primary">Post Job</a>
+        </div>
     </div>
 
     <div class="card shadow-sm" th:if="${!#lists.isEmpty(jobs)}">

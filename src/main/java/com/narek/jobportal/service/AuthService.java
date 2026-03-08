@@ -7,4 +7,12 @@ public interface AuthService {
     Employer getCurrentEmployer();
 
     Candidate getCurrentCandidate();
+
+    boolean isCurrentCandidate(Long candidateId);
+
+    boolean isCurrentCandidateApplication(Long applicationId);
+
+    boolean isCurrentEmployerJob(Long jobId);
+
+    boolean isCurrentEmployerApplication(Long applicationId);
 }

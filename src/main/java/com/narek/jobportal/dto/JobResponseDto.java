@@ -1,9 +1,12 @@
 package com.narek.jobportal.dto;
 
+import com.narek.jobportal.entity.JobType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -16,5 +19,8 @@ public class JobResponseDto {
     private String title;
     private String description;
     private Double salary;
+    private JobType jobType;
+    private String location;
+    private LocalDate closingDate;
     private String companyName;  // derived from Employer
 }

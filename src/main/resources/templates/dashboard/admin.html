@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{layout :: head('Admin Dashboard | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container" sec:authorize="hasRole('ADMIN')">
+    <h2 class="mb-3">Admin Dashboard</h2>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Total Jobs</h5>
+                    <p class="display-6 mb-0" th:text="${totalJobs}"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Total Applications</h5>
+                    <p class="display-6 mb-0" th:text="${totalApplications}"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a th:href="@{/admin/users(role='EMPLOYER')}" class="btn btn-outline-primary">Manage Users</a>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Recent Employers</h5>
+                    <ul class="mb-0" th:if="${employerUsers != null}">
+                        <li th:each="u : ${employerUsers}" th:text="${u.email}"></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Recent Candidates</h5>
+                    <ul class="mb-0" th:if="${candidateUsers != null}">
+                        <li th:each="u : ${candidateUsers}" th:text="${u.email}"></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>

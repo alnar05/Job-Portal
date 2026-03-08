@@ -57,7 +57,8 @@ public class ApplicationController {
 
     // Delete application (admin or the candidate)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentCandidateApplication(#id)")
+    @PreAuthorize("hasRole('ADMIN') ")
+//            "or @authService.isCurrentCandidateApplication(#id)")
     public String deleteApplication(@PathVariable Long id) {
         applicationService.deleteApplication(id);
         return "Application deleted successfully";

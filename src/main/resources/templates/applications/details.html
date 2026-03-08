@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{layout :: head('Application Details | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container" th:if="${applicationDetails != null}">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="h4 mb-3">Application #<span th:text="${applicationDetails.id}"></span></h2>
+            <p class="mb-1"><strong>Job:</strong> <span th:text="${applicationDetails.jobTitle}"></span></p>
+            <p class="mb-1"><strong>Candidate:</strong> <span th:text="${applicationDetails.candidateName}"></span></p>
+            <p class="mb-1"><strong>Applied At:</strong> <span th:text="${#temporals.format(applicationDetails.appliedAt, 'yyyy-MM-dd HH:mm')}"></span></p>
+            <span class="badge text-bg-secondary" th:text="${applicationDetails.status}"></span>
+
+            <h6>Cover letter</h6>
+            <p th:text="${#strings.isEmpty(applicationDetails.coverLetter) ? '-' : applicationDetails.coverLetter}"></p>
+
+            <div class="d-flex gap-2 mt-4" sec:authorize="hasAnyRole('ADMIN','EMPLOYER')">
+                <form th:action="@{/applications/{id}/accept(id=${applicationDetails.id})}" method="post">
+                    <button type="submit" class="btn btn-success"
+                            th:disabled="${applicationDetails.status == T(com.narek.jobportal.entity.ApplicationStatus).ACCEPTED || applicationDetails.status == T(com.narek.jobportal.entity.ApplicationStatus).REJECTED}">Accept</button>
+                </form>
+
+                <form th:action="@{/applications/{id}/reject(id=${applicationDetails.id})}" method="post">
+                    <button type="submit" class="btn btn-danger"
+                            th:disabled="${applicationDetails.status == T(com.narek.jobportal.entity.ApplicationStatus).ACCEPTED || applicationDetails.status == T(com.narek.jobportal.entity.ApplicationStatus).REJECTED}">Reject</button>
+                </form>
+
+                <a th:href="@{${backUrl}}" class="btn btn-outline-secondary" th:text="${backLabel}">Back</a>
+            </div>
+
+            <div class="d-flex gap-2 mt-4" sec:authorize="hasRole('CANDIDATE')">
+                <a th:href="@{${backUrl}}" class="btn btn-outline-secondary" th:text="${backLabel}">Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>
