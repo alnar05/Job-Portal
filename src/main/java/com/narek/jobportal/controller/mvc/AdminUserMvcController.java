@@ -1,5 +1,6 @@
 package com.narek.jobportal.controller.mvc;
 
+import com.narek.jobportal.dto.AdminUserFilterDto;
 import com.narek.jobportal.entity.Role;
 import com.narek.jobportal.entity.User;
 import com.narek.jobportal.service.UserService;
@@ -10,12 +11,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin/users")
@@ -29,15 +28,12 @@ public class AdminUserMvcController {
     }
 
     @GetMapping
-    public String listUsers(@RequestParam(defaultValue = "EMPLOYER") Role role,
-                            @RequestParam(defaultValue = "0") int page,
-                            @RequestParam(defaultValue = "10") int size,
-                            Model model) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> users = userService.getUsersByRole(role, pageable);
+    public String listUsers(@ModelAttribute("filter") AdminUserFilterDto filter, Model model) {
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
+        Page<User> users = userService.searchUsers(filter, pageable);
 
         model.addAttribute("users", users);
-        model.addAttribute("selectedRole", role);
+        model.addAttribute("roles", Role.values());
         return "dashboard/admin-users";
     }
 
@@ -56,6 +52,19 @@ public class AdminUserMvcController {
         userService.setEnabled(id, enabled);
         redirectAttributes.addFlashAttribute("successMessage", enabled ? "User enabled." : "User disabled.");
         return "redirect:/admin/users/" + id;
+    }
+
+    @PostMapping("/bulk-status")
+    public String bulkUpdateStatus(@RequestParam(name = "userIds", required = false) List<Long> userIds,
+                                   @RequestParam boolean enabled,
+                                   RedirectAttributes redirectAttributes) {
+        if (userIds == null || userIds.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select at least one user.");
+            return "redirect:/admin/users";
+        }
+        userService.setEnabledBulk(userIds, enabled);
+        redirectAttributes.addFlashAttribute("successMessage", "Bulk user status updated.");
+        return "redirect:/admin/users";
     }
 
     @PostMapping("/{id}/delete")

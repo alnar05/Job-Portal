@@ -1,5 +1,6 @@
 package com.narek.jobportal.service.impl;
 
+import com.narek.jobportal.dto.AdminApplicationFilterDto;
 import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
 import com.narek.jobportal.dto.ApplicationResponseDto;
 import com.narek.jobportal.entity.Application;
@@ -12,7 +13,11 @@ import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
+import com.narek.jobportal.specification.ApplicationSpecification;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -20,13 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ApplicationServiceImpl implements ApplicationService {
 
     private final ApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
-    private final AuthService authService; // for getting logged-in candidate
+    private final AuthService authService;
 
     public ApplicationServiceImpl(ApplicationRepository applicationRepository,
                                   JobRepository jobRepository,
@@ -48,7 +55,6 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new JobApplicationClosedException("Job application period has closed");
         }
 
-        // prevent duplicate applications
         if (applicationRepository.existsByJobIdAndCandidateId(dto.getJobId(), candidate.getId())) {
             throw new DuplicateApplicationException(
                     "You have already already applied for job with id " + dto.getJobId()
@@ -65,7 +71,6 @@ public class ApplicationServiceImpl implements ApplicationService {
         return mapToResponseDto(saved);
     }
 
-    // Disabled update method
     @Override
     public ApplicationResponseDto updateApplication(Long id, ApplicationCreateUpdateDto dto) {
         throw new UnsupportedOperationException("Updating applications is not allowed");
@@ -92,28 +97,19 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public List<ApplicationResponseDto> getAllApplications() {
-        return applicationRepository.findAll()
-                .stream()
-                .map(this::mapToResponseDto)
-                .toList();
+        return applicationRepository.findAll().stream().map(this::mapToResponseDto).toList();
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentCandidate(#candidateId)")
     public List<ApplicationResponseDto> getApplicationsByCandidateId(Long candidateId) {
-        return applicationRepository.findByCandidateId(candidateId)
-                .stream()
-                .map(this::mapToResponseDto)
-                .toList();
+        return applicationRepository.findByCandidateId(candidateId).stream().map(this::mapToResponseDto).toList();
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#jobId)")
     public List<ApplicationResponseDto> getApplicationsByJobId(Long jobId) {
-        return applicationRepository.findByJobId(jobId)
-                .stream()
-                .map(this::mapToResponseDto)
-                .toList();
+        return applicationRepository.findByJobId(jobId).stream().map(this::mapToResponseDto).toList();
     }
 
     @Override
@@ -141,21 +137,56 @@ public class ApplicationServiceImpl implements ApplicationService {
         return updateFinalStatus(applicationId, ApplicationStatus.REJECTED);
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApplicationResponseDto cancelApplication(Long applicationId) {
+        return updateFinalStatus(applicationId, ApplicationStatus.CANCELLED);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<ApplicationResponseDto> searchAdminApplications(AdminApplicationFilterDto filter, Pageable pageable) {
+        Specification<Application> spec = Specification.where(ApplicationSpecification.byCandidate(filter.getCandidateId()))
+                .and(ApplicationSpecification.byJob(filter.getJobId()))
+                .and(ApplicationSpecification.byStatus(filter.getStatus()));
+        return applicationRepository.findAll(spec, pageable).map(this::mapToResponseDto);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void updateStatusBulk(List<Long> applicationIds, ApplicationStatus status) {
+        if (applicationIds == null || applicationIds.isEmpty() || status == null) return;
+        List<Application> applications = applicationRepository.findAllById(applicationIds);
+        applications.forEach(a -> a.setStatus(status));
+        applicationRepository.saveAll(applications);
+    }
+
+    @Override
+    public List<ApplicationResponseDto> getRecentApplications(int limit) {
+        return applicationRepository.findTop5ByOrderByAppliedAtDesc().stream().limit(limit).map(this::mapToResponseDto).toList();
+    }
+
+    @Override
+    public Map<Long, Long> countByJobIds(List<Long> jobIds) {
+        if (jobIds == null || jobIds.isEmpty()) return Map.of();
+        return applicationRepository.findAll().stream()
+                .filter(a -> jobIds.contains(a.getJob().getId()))
+                .collect(Collectors.groupingBy(a -> a.getJob().getId(), Collectors.counting()));
+    }
+
     private ApplicationResponseDto updateFinalStatus(Long applicationId, ApplicationStatus targetStatus) {
         Application application = getManagedApplication(applicationId);
-        if (application.getStatus() == ApplicationStatus.ACCEPTED || application.getStatus() == ApplicationStatus.REJECTED) {
+        if (application.getStatus() == ApplicationStatus.ACCEPTED || application.getStatus() == ApplicationStatus.REJECTED || application.getStatus() == ApplicationStatus.CANCELLED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Application is already finalized");
         }
-
         application.setStatus(targetStatus);
         return mapToResponseDto(applicationRepository.save(application));
     }
 
     private String normalizeCoverLetter(String coverLetter) {
-        if (coverLetter == null) {
-            return null;
-        }
-
+        if (coverLetter == null) return null;
         String trimmed = coverLetter.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
@@ -166,15 +197,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     private ApplicationResponseDto mapToResponseDto(Application app) {
-        return new ApplicationResponseDto(
-                app.getId(),
-                app.getJob().getId(),
-                app.getJob().getTitle(),
-                app.getCandidate().getId(),
-                app.getCandidate().getUser().getEmail(),
-                app.getCoverLetter(),
-                app.getAppliedAt(),
-                app.getStatus()
-        );
+        return new ApplicationResponseDto(app.getId(), app.getJob().getId(), app.getJob().getTitle(), app.getCandidate().getId(),
+                app.getCandidate().getUser().getEmail(), app.getCoverLetter(), app.getAppliedAt(), app.getStatus());
     }
 }

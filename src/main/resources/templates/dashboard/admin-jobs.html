@@ -1,0 +1,15 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head><th:block th:replace="~{layout :: head('Admin Jobs')}"></th:block></head><body class="bg-light"><div th:replace="~{layout :: navbar}"></div><div th:replace="~{layout :: flash-messages}"></div>
+<div class="container">
+<h2>Admin Job Management</h2>
+<form class="row g-2 mb-3" method="get" th:action="@{/admin/jobs}">
+<input class="form-control col" name="minSalary" placeholder="Min salary" th:value="${filter.minSalary}">
+<input class="form-control col" name="maxSalary" placeholder="Max salary" th:value="${filter.maxSalary}">
+<select class="form-select col" name="status"><option value="">Any status</option><option th:each="s:${jobStatuses}" th:value="${s}" th:text="${s}" th:selected="${filter.status==s}"></option></select>
+<select class="form-select col" name="employerId"><option value="">Any employer</option><option th:each="e:${employers}" th:value="${e.id}" th:text="${e.companyName}" th:selected="${filter.employerId==e.id}"></option></select>
+<button class="btn btn-primary col-auto">Filter</button></form>
+<form method="post" th:action="@{/admin/jobs/bulk-status}">
+<div class="mb-2 d-flex gap-2"><button class="btn btn-warning" name="reopen" value="false">Close Selected</button><button class="btn btn-success" name="reopen" value="true">Reopen Selected</button></div>
+<table class="table table-striped"><thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.j-check').forEach(c=>c.checked=this.checked)"></th><th>Title</th><th>Employer</th><th>Salary</th><th>Status</th><th>Applicants</th></tr></thead><tbody>
+<tr th:each="job:${jobs.content}"><td><input class="j-check" type="checkbox" name="jobIds" th:value="${job.id}"></td><td th:text="${job.title}"></td><td th:text="${job.employer.companyName}"></td><td th:text="${job.salary}"></td><td th:text="${job.status}"></td><td th:text="${applicantCounts[job.id] ?: 0}"></td></tr>
+</tbody></table></form></div>
+<th:block th:replace="~{layout :: scripts}"></th:block></body></html>

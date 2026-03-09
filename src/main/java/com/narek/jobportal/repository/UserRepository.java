@@ -5,14 +5,18 @@ import com.narek.jobportal.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     Optional<User> findByEmail(String email);
 
     @Query("select distinct u from User u join u.roles r where r = :role")
     Page<User> findAllByRole(@Param("role") Role role, Pageable pageable);
+
+    List<User> findTop5ByOrderByCreatedAtDesc();
 }
