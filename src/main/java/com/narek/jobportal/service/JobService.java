@@ -1,7 +1,9 @@
 package com.narek.jobportal.service;
 
+import com.narek.jobportal.dto.AdminJobFilterDto;
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.Job;
 import com.narek.jobportal.entity.JobType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,4 +26,8 @@ public interface JobService {
             Double maxSalary,
             Pageable pageable
     );
+
+    Page<Job> searchAdminJobs(AdminJobFilterDto filter, Pageable pageable);
+    void updateStatusBulk(List<Long> jobIds, boolean reopen);
+    List<Job> getRecentJobs(int limit);
 }

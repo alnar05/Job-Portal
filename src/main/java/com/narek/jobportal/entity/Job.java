@@ -59,6 +59,11 @@ public class Job {
     @Column(nullable = false)
     private LocalDate closingDate;
 
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private JobStatus status = JobStatus.ACTIVE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employer_id", nullable = false)
     private Employer employer;
@@ -73,5 +78,9 @@ public class Job {
 
     public boolean isExpired() {
         return LocalDate.now().isAfter(closingDate);
+    }
+
+    public boolean isActive() {
+        return status == JobStatus.ACTIVE && !isExpired();
     }
 }

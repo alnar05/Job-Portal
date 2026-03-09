@@ -1,14 +1,17 @@
 package com.narek.jobportal.service.impl;
 
+import com.narek.jobportal.dto.AdminJobFilterDto;
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.entity.Job;
+import com.narek.jobportal.entity.JobStatus;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
+import com.narek.jobportal.specification.AdminJobSpecification;
 import com.narek.jobportal.specification.JobSpecification;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -43,6 +46,7 @@ public class JobServiceImpl implements JobService {
         logger.info("Fetching all active jobs");
         return jobRepository.findAll(JobSpecification.notExpired())
                 .stream()
+                .filter(job -> job.getStatus() == JobStatus.ACTIVE)
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -83,6 +87,7 @@ public class JobServiceImpl implements JobService {
         Job job = new Job();
         applyDto(job, dto);
         job.setEmployer(employer);
+        job.setStatus(JobStatus.ACTIVE);
 
         Job savedJob = jobRepository.save(job);
         return mapToResponse(savedJob);
@@ -107,16 +112,39 @@ public class JobServiceImpl implements JobService {
                                            Double minSalary,
                                            Double maxSalary,
                                            Pageable pageable) {
-        logger.info("Searching jobs keyword={}, location={}, jobType={}, minSalary={}, maxSalary={}, page={}",
-                keyword, location, jobType, minSalary, maxSalary, pageable.getPageNumber());
-
         Specification<Job> spec = Specification.where(JobSpecification.notExpired())
                 .and(JobSpecification.hasKeyword(keyword))
                 .and(JobSpecification.hasLocation(location))
                 .and(JobSpecification.hasJobType(jobType))
-                .and(JobSpecification.overlapsSalaryRange(minSalary, maxSalary));
+                .and(JobSpecification.overlapsSalaryRange(minSalary, maxSalary))
+                .and(AdminJobSpecification.hasStatus(JobStatus.ACTIVE));
 
         return jobRepository.findAll(spec, pageable).map(this::mapToResponse);
+    }
+
+    @Override
+    public Page<Job> searchAdminJobs(AdminJobFilterDto filter, Pageable pageable) {
+        Specification<Job> spec = Specification.where(AdminJobSpecification.hasStatus(filter.getStatus()))
+                .and(AdminJobSpecification.minSalary(filter.getMinSalary()))
+                .and(AdminJobSpecification.maxSalary(filter.getMaxSalary()))
+                .and(AdminJobSpecification.byEmployer(filter.getEmployerId()));
+        return jobRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    @Transactional
+    public void updateStatusBulk(List<Long> jobIds, boolean reopen) {
+        if (jobIds == null || jobIds.isEmpty()) {
+            return;
+        }
+        List<Job> jobs = jobRepository.findAllById(jobIds);
+        jobs.forEach(job -> job.setStatus(reopen ? JobStatus.ACTIVE : JobStatus.CLOSED));
+        jobRepository.saveAll(jobs);
+    }
+
+    @Override
+    public List<Job> getRecentJobs(int limit) {
+        return jobRepository.findTop5ByOrderByCreatedAtDesc().stream().limit(limit).toList();
     }
 
     private void applyDto(Job job, JobCreateUpdateDto dto) {

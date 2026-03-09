@@ -2,6 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <th:block th:replace="~{layout :: head('Admin Dashboard | Job Portal')}"></th:block>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-light">
 <div th:replace="~{layout :: navbar}"></div>
@@ -9,53 +10,39 @@
 
 <div class="container" sec:authorize="hasRole('ADMIN')">
     <h2 class="mb-3">Admin Dashboard</h2>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Total Jobs</h5>
-                    <p class="display-6 mb-0" th:text="${totalJobs}"></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Total Applications</h5>
-                    <p class="display-6 mb-0" th:text="${totalApplications}"></p>
-                </div>
-            </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Jobs</h6><div class="h4" th:text="${stats.totalJobs}"></div><small>Active: <span th:text="${stats.activeJobs}"></span> | Closed: <span th:text="${stats.closedJobs}"></span></small></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Applications</h6><div class="h4" th:text="${stats.totalApplications}"></div><small>Pending: <span th:text="${stats.pendingApplications}"></span></small></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Users</h6><div class="h4" th:text="${stats.totalUsers}"></div><small>Enabled: <span th:text="${stats.usersByStatus['ENABLED']}"></span></small></div></div></div>
+        <div class="col-md-3 d-grid gap-2">
+            <a th:href="@{/admin/users}" class="btn btn-outline-primary">Manage Users</a>
+            <a th:href="@{/admin/jobs}" class="btn btn-outline-primary">Manage Jobs</a>
+            <a th:href="@{/admin/applications}" class="btn btn-outline-primary">Manage Applications</a>
         </div>
     </div>
 
-    <div class="mt-4">
-        <a th:href="@{/admin/users(role='EMPLOYER')}" class="btn btn-outline-primary">Manage Users</a>
+    <div class="row g-3">
+        <div class="col-md-4"><div class="card"><div class="card-body"><canvas id="jobsChart"></canvas></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body"><canvas id="appsChart"></canvas></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body"><canvas id="usersChart"></canvas></div></div></div>
     </div>
 
     <div class="row g-3 mt-1">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Recent Employers</h5>
-                    <ul class="mb-0" th:if="${employerUsers != null}">
-                        <li th:each="u : ${employerUsers}" th:text="${u.email}"></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Recent Candidates</h5>
-                    <ul class="mb-0" th:if="${candidateUsers != null}">
-                        <li th:each="u : ${candidateUsers}" th:text="${u.email}"></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <div class="col-md-4"><div class="card"><div class="card-header">Last 5 Jobs</div><ul class="list-group list-group-flush"><li class="list-group-item" th:each="item:${stats.recentJobs}"><strong th:text="${item.title}"></strong><br><small th:text="${item.subtitle + ' • ' + item.timestamp}"></small></li></ul></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-header">Last 5 Applications</div><ul class="list-group list-group-flush"><li class="list-group-item" th:each="item:${stats.recentApplications}"><strong th:text="${item.title}"></strong><br><small th:text="${item.subtitle + ' • ' + item.timestamp}"></small></li></ul></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-header">Recent Users</div><ul class="list-group list-group-flush"><li class="list-group-item" th:each="item:${stats.recentUsers}"><strong th:text="${item.title}"></strong><br><small th:text="${item.subtitle + ' • ' + item.timestamp}"></small></li></ul></div></div>
     </div>
 </div>
 
+<script th:inline="javascript">
+    const jobs = /*[[${stats.jobsOverTime}]]*/ [];
+    const apps = /*[[${stats.applicationsOverTime}]]*/ [];
+    const users = /*[[${stats.usersOverTime}]]*/ [];
+    const makeChart = (id, data, label) => new Chart(document.getElementById(id), {type:'line', data:{labels:data.map(x=>x.label), datasets:[{label, data:data.map(x=>x.value)}]}});
+    makeChart('jobsChart', jobs, 'Jobs');
+    makeChart('appsChart', apps, 'Applications');
+    makeChart('usersChart', users, 'Users');
+</script>
 <th:block th:replace="~{layout :: scripts}"></th:block>
 </body>
 </html>

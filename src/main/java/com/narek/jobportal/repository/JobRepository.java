@@ -15,4 +15,6 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
             String descriptionKeyword,
             Pageable pageable
     );
+
+    List<Job> findTop5ByOrderByCreatedAtDesc();
 }
