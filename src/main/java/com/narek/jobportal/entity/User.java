@@ -51,6 +51,23 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Candidate candidate;
 
+    public User(Long id,
+                String email,
+                String password,
+                boolean enabled,
+                Set<Role> roles,
+                Employer employer,
+                Candidate candidate) {
+        this.id = id;
+        this.email = email;
+        this.password = password;
+        this.enabled = enabled;
+        this.roles = roles;
+        this.employer = employer;
+        this.candidate = candidate;
+        this.status = enabled ? UserStatus.ACTIVE : UserStatus.DISABLED;
+    }
+
     @PrePersist
     protected void onCreate() {
         registrationDate = LocalDateTime.now();
