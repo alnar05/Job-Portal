@@ -25,6 +25,25 @@ public interface JobService {
             JobType jobType,
             Double minSalary,
             Double maxSalary,
+            Pageable pageable
+    );
+
+    Page<JobResponseDto> searchJobs(
+            String keyword,
+            String location,
+            JobType jobType,
+            Double minSalary,
+            Double maxSalary,
+            String companyName,
+            Pageable pageable
+    );
+
+    Page<JobResponseDto> searchJobs(
+            String keyword,
+            String location,
+            JobType jobType,
+            Double minSalary,
+            Double maxSalary,
             String companyName,
             SearchSortOption sortOption,
             Pageable pageable

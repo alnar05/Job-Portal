@@ -41,7 +41,7 @@ public class JobMvcController {
                            @RequestParam(defaultValue = "9") int size,
                            Model model) {
         Page<JobResponseDto> jobPage = jobService.searchJobs(
-                keyword, location, jobType, minSalary, maxSalary, companyName, sort,
+                keyword, location, jobType, minSalary, maxSalary,
                 PageRequest.of(page, size)
         );
 

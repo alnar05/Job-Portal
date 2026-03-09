@@ -32,4 +32,15 @@ public class Candidate {
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
+
+    public Candidate(Long id, String firstName, String lastName, String resumeUrl) {
+        this.id = id;
+        this.fullName = (firstName == null ? "" : firstName)
+                + (lastName == null || lastName.isBlank() ? "" : " " + lastName);
+        this.resumeUrl = resumeUrl;
+        this.resumeFilePath = null;
+        this.resumeFileName = null;
+        this.parsedResumeSummary = null;
+        this.user = null;
+    }
 }

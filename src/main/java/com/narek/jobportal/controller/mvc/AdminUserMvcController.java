@@ -49,7 +49,7 @@ public class AdminUserMvcController {
         return "dashboard/admin-user-details";
     }
 
-    @PostMapping("/{id}/status")
+    @PostMapping("/{id}/toggle")
     public String updateStatus(@PathVariable Long id,
                                @RequestParam boolean enabled,
                                RedirectAttributes redirectAttributes) {

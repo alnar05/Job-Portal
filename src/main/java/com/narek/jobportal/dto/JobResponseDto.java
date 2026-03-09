@@ -27,4 +27,25 @@ public class JobResponseDto {
     private JobStatus status;
     private Long viewCount;
     private Long applicationCount;
+
+    public JobResponseDto(Long id,
+                          String title,
+                          String description,
+                          Double salary,
+                          JobType jobType,
+                          String location,
+                          LocalDate postedDate,
+                          String companyName) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.salary = salary;
+        this.jobType = jobType;
+        this.location = location;
+        this.closingDate = postedDate;
+        this.companyName = companyName;
+        this.status = null;
+        this.viewCount = null;
+        this.applicationCount = null;
+    }
 }

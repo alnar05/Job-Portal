@@ -23,4 +23,23 @@ public class ApplicationResponseDto {
     private String internalNotes;
     private LocalDateTime appliedAt;
     private ApplicationStatus status;
+
+    public ApplicationResponseDto(Long id,
+                                  Long jobId,
+                                  String jobTitle,
+                                  Long candidateId,
+                                  String candidateName,
+                                  String resumeUrl,
+                                  LocalDateTime appliedAt,
+                                  ApplicationStatus status) {
+        this.id = id;
+        this.jobId = jobId;
+        this.jobTitle = jobTitle;
+        this.candidateId = candidateId;
+        this.candidateName = candidateName;
+        this.coverLetter = resumeUrl;
+        this.internalNotes = null;
+        this.appliedAt = appliedAt;
+        this.status = status;
+    }
 }

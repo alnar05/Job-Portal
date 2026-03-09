@@ -122,6 +122,27 @@ public class JobServiceImpl implements JobService {
                                            JobType jobType,
                                            Double minSalary,
                                            Double maxSalary,
+                                           Pageable pageable) {
+        return searchJobs(keyword, location, jobType, minSalary, maxSalary, null, pageable);
+    }
+
+    @Override
+    public Page<JobResponseDto> searchJobs(String keyword,
+                                           String location,
+                                           JobType jobType,
+                                           Double minSalary,
+                                           Double maxSalary,
+                                           String companyName,
+                                           Pageable pageable) {
+        return searchJobs(keyword, location, jobType, minSalary, maxSalary, companyName, SearchSortOption.NEWEST, pageable);
+    }
+
+    @Override
+    public Page<JobResponseDto> searchJobs(String keyword,
+                                           String location,
+                                           JobType jobType,
+                                           Double minSalary,
+                                           Double maxSalary,
                                            String companyName,
                                            SearchSortOption sortOption,
                                            Pageable pageable) {
