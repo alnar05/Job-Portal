@@ -4,6 +4,7 @@ import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
 import com.narek.jobportal.dto.BulkApplicationActionDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.Candidate;
+import com.narek.jobportal.exception.DuplicateApplicationException;
 import com.narek.jobportal.exception.JobApplicationClosedException;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
@@ -74,6 +75,8 @@ public class ApplicationMvcController {
         try {
             applicationService.createApplication(dto);
             redirectAttributes.addFlashAttribute("successMessage", "Application submitted successfully.");
+        } catch (DuplicateApplicationException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "You have already applied to this job.");
         } catch (JobApplicationClosedException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         } catch (ResponseStatusException ex) {
@@ -142,7 +145,7 @@ public class ApplicationMvcController {
         return "applications/details";
     }
 
-    @PostMapping("/{id}/accept")
+    @PostMapping({"/{id}/accept", "/employer/{id}/accept"})
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id)")
     public String acceptApplication(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         applicationService.acceptApplication(id);
@@ -150,11 +153,19 @@ public class ApplicationMvcController {
         return "redirect:/applications/" + id;
     }
 
-    @PostMapping("/{id}/reject")
+    @PostMapping({"/{id}/reject", "/employer/{id}/reject"})
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id)")
     public String rejectApplication(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         applicationService.rejectApplication(id);
         redirectAttributes.addFlashAttribute("successMessage", "Application rejected.");
+        return "redirect:/applications/" + id;
+    }
+
+    @PostMapping({"/{id}/cancel", "/employer/{id}/cancel"})
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#id)")
+    public String cancelApplicationDecision(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        applicationService.cancelApplicationDecision(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Application moved back to pending.");
         return "redirect:/applications/" + id;
     }
 }

@@ -45,6 +45,9 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + dto.getJobId()));
 
         Candidate candidate = authService.getCurrentCandidate();
+        if (candidate.getUser().getStatus() == UserStatus.BANNED) {
+            throw new org.springframework.security.access.AccessDeniedException("Banned candidates cannot apply to jobs");
+        }
 
         if (job.isExpired() || job.getStatus() != JobStatus.OPEN) {
             throw new JobApplicationClosedException("Job application period has closed");
@@ -131,6 +134,18 @@ public class ApplicationServiceImpl implements ApplicationService {
     @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#applicationId)")
     public ApplicationResponseDto rejectApplication(Long applicationId) {
         return updateFinalStatus(applicationId, ApplicationStatus.REJECTED);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerApplication(#applicationId)")
+    public ApplicationResponseDto cancelApplicationDecision(Long applicationId) {
+        Application application = getManagedApplication(applicationId);
+        application.setStatus(ApplicationStatus.APPLIED);
+        Application saved = applicationRepository.save(application);
+        notificationService.notify(saved.getCandidate().getUser(), "Application status changed",
+                "Your application for '" + saved.getJob().getTitle() + "' is now " + saved.getStatus());
+        return mapToResponseDto(saved);
     }
 
     @Override

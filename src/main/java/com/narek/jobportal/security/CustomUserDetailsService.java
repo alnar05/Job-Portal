@@ -1,6 +1,7 @@
 package com.narek.jobportal.security;
 
 import com.narek.jobportal.entity.User;
+import com.narek.jobportal.entity.UserStatus;
 import com.narek.jobportal.repository.UserRepository;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .disabled(!user.isEnabled())
+                .disabled(user.getStatus() != UserStatus.ACTIVE)
                 .authorities(
                         user.getRoles().stream()
                                 .map(role -> "ROLE_" + role.name())

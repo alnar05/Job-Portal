@@ -20,8 +20,6 @@ public class Candidate {
 
     private String fullName;
 
-    private String resumeUrl;
-
     private String resumeFilePath;
 
     private String resumeFileName;
@@ -33,11 +31,10 @@ public class Candidate {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    public Candidate(Long id, String firstName, String lastName, String resumeUrl) {
+    public Candidate(Long id, String firstName, String lastName) {
         this.id = id;
         this.fullName = (firstName == null ? "" : firstName)
                 + (lastName == null || lastName.isBlank() ? "" : " " + lastName);
-        this.resumeUrl = resumeUrl;
         this.resumeFilePath = null;
         this.resumeFileName = null;
         this.parsedResumeSummary = null;

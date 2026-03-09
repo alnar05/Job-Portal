@@ -35,8 +35,6 @@ public class RegistrationDto {
 
     private String fullName;
 
-    private String resumeUrl;
-
     @AssertTrue(message = "Passwords do not match")
     public boolean isPasswordConfirmed() {
         if (password == null || confirmPassword == null) {

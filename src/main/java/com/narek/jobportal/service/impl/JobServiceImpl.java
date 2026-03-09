@@ -2,11 +2,9 @@ package com.narek.jobportal.service.impl;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
-import com.narek.jobportal.dto.SavedSearchDto;
 import com.narek.jobportal.entity.*;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
-import com.narek.jobportal.repository.SavedSearchRepository;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
 import com.narek.jobportal.service.NotificationService;
@@ -32,18 +30,15 @@ public class JobServiceImpl implements JobService {
 
     private final JobRepository jobRepository;
     private final ApplicationRepository applicationRepository;
-    private final SavedSearchRepository savedSearchRepository;
     private final AuthService authService;
     private final NotificationService notificationService;
 
     public JobServiceImpl(JobRepository jobRepository,
                           ApplicationRepository applicationRepository,
-                          SavedSearchRepository savedSearchRepository,
                           AuthService authService,
                           NotificationService notificationService) {
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
-        this.savedSearchRepository = savedSearchRepository;
         this.authService = authService;
         this.notificationService = notificationService;
     }
@@ -51,10 +46,15 @@ public class JobServiceImpl implements JobService {
     @Override
     public List<JobResponseDto> getAllJobs() {
         logger.info("Fetching all active jobs");
-        return jobRepository.findAll(JobSpecification.notExpired())
+        return jobRepository.findAll(JobSpecification.publiclyVisible())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Override
+    public List<JobResponseDto> getAllJobsForManagement() {
+        return jobRepository.findAll().stream().map(this::mapToResponse).toList();
     }
 
     @Override
@@ -88,6 +88,9 @@ public class JobServiceImpl implements JobService {
     @Override
     public JobResponseDto createJob(JobCreateUpdateDto dto) {
         Employer employer = authService.getCurrentEmployer();
+        if (employer.getUser().getStatus() == UserStatus.BANNED) {
+            throw new org.springframework.security.access.AccessDeniedException("Banned employers cannot post jobs");
+        }
 
         Job job = new Job();
         applyDto(job, dto);
@@ -148,6 +151,7 @@ public class JobServiceImpl implements JobService {
                                            Pageable pageable) {
 
         Specification<Job> spec = Specification.where(JobSpecification.notExpired())
+                .and(JobSpecification.isOpen())
                 .and(JobSpecification.hasKeyword(keyword))
                 .and(JobSpecification.hasLocation(location))
                 .and(JobSpecification.hasJobType(jobType))
@@ -167,43 +171,6 @@ public class JobServiceImpl implements JobService {
         }
 
         return jobRepository.findAll(spec, effective).map(this::mapToResponse);
-    }
-
-    @Override
-    @Transactional
-    public SavedSearchDto saveSearch(SavedSearchDto dto) {
-        Candidate candidate = authService.getCurrentCandidate();
-        SavedSearch savedSearch = new SavedSearch();
-        savedSearch.setCandidate(candidate);
-        savedSearch.setName(dto.getName());
-        savedSearch.setKeyword(dto.getKeyword());
-        savedSearch.setLocation(dto.getLocation());
-        savedSearch.setCompanyName(dto.getCompanyName());
-        savedSearch.setJobType(dto.getJobType());
-        savedSearch.setMinSalary(dto.getMinSalary());
-        savedSearch.setMaxSalary(dto.getMaxSalary());
-        savedSearch.setSortOption(dto.getSortOption() == null ? SearchSortOption.NEWEST : dto.getSortOption());
-        SavedSearch saved = savedSearchRepository.save(savedSearch);
-        dto.setId(saved.getId());
-        return dto;
-    }
-
-    @Override
-    public List<SavedSearchDto> getSavedSearchesForCurrentCandidate() {
-        Candidate candidate = authService.getCurrentCandidate();
-        return savedSearchRepository.findByCandidateIdOrderByCreatedAtDesc(candidate.getId()).stream().map(saved -> {
-            SavedSearchDto dto = new SavedSearchDto();
-            dto.setId(saved.getId());
-            dto.setName(saved.getName());
-            dto.setKeyword(saved.getKeyword());
-            dto.setLocation(saved.getLocation());
-            dto.setCompanyName(saved.getCompanyName());
-            dto.setJobType(saved.getJobType());
-            dto.setMinSalary(saved.getMinSalary());
-            dto.setMaxSalary(saved.getMaxSalary());
-            dto.setSortOption(saved.getSortOption());
-            return dto;
-        }).toList();
     }
 
     @Override

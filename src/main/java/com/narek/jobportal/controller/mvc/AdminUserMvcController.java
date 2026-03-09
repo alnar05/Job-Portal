@@ -29,12 +29,14 @@ public class AdminUserMvcController {
     }
 
     @GetMapping
-    public String listUsers(@RequestParam(defaultValue = "EMPLOYER") Role role,
+    public String listUsers(@RequestParam(required = false) Role role,
                             @RequestParam(defaultValue = "0") int page,
                             @RequestParam(defaultValue = "10") int size,
                             Model model) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<User> users = userService.getUsersByRole(role, pageable);
+        Page<User> users = role == null
+                ? userService.getAllUsers(pageable)
+                : userService.getUsersByRole(role, pageable);
 
         model.addAttribute("users", users);
         model.addAttribute("selectedRole", role);

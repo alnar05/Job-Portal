@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{layout :: head('Admin Reports')}"></th:block></head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div class="container mt-3">
+    <h3>Platform Statistics</h3>
+    <ul>
+        <li>Total jobs: <span th:text="${totalJobs}"></span></li>
+        <li>Total applications: <span th:text="${totalApplications}"></span></li>
+        <li>Total employers: <span th:text="${totalEmployers}"></span></li>
+        <li>Total candidates: <span th:text="${totalCandidates}"></span></li>
+    </ul>
+</div>
+</body>
+</html>

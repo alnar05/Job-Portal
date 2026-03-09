@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{layout :: head('Admin Applications')}"></th:block></head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div class="container mt-3">
+    <h3>All Applications</h3>
+    <table class="table table-sm"><tr><th>Candidate</th><th>Job</th><th>Status</th></tr>
+        <tr th:each="a : ${applications}"><td th:text="${a.candidateName}"></td><td th:text="${a.jobTitle}"></td><td th:text="${a.status}"></td></tr>
+    </table>
+</div>
+</body>
+</html>

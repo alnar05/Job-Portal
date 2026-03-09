@@ -52,7 +52,6 @@ public class CandidateServiceImpl implements CandidateService {
         }
 
         candidate.setFullName(profileUpdateDto.getFullName());
-        candidate.setResumeUrl(profileUpdateDto.getResumeUrl());
 
         return candidateRepository.save(candidate);
     }

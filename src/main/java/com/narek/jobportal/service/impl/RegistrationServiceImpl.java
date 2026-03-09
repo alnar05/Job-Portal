@@ -73,7 +73,6 @@ public class RegistrationServiceImpl implements RegistrationService {
         if (dto.getRole() == Role.CANDIDATE) {
             Candidate candidate = new Candidate();
             candidate.setFullName(dto.getFullName().trim());
-            candidate.setResumeUrl(normalizeOptional(dto.getResumeUrl()));
             candidate.setUser(savedUser);
             candidateRepository.save(candidate);
             savedUser.setCandidate(candidate);

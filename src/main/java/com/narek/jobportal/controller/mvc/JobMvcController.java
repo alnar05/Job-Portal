@@ -2,7 +2,6 @@ package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
-import com.narek.jobportal.dto.SavedSearchDto;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.entity.SearchSortOption;
 import com.narek.jobportal.service.JobService;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Locale;
 
 @Controller
 @RequestMapping("/jobs")
@@ -36,37 +36,29 @@ public class JobMvcController {
                            @RequestParam(required = false) Double minSalary,
                            @RequestParam(required = false) Double maxSalary,
                            @RequestParam(required = false) String companyName,
-                           @RequestParam(defaultValue = "NEWEST") SearchSortOption sort,
+                           @RequestParam(defaultValue = "newest") String sort,
                            @RequestParam(defaultValue = "0") int page,
                            @RequestParam(defaultValue = "9") int size,
                            Model model) {
+        SearchSortOption sortOption = parseSort(sort);
         Page<JobResponseDto> jobPage = jobService.searchJobs(
-                keyword, location, jobType, minSalary, maxSalary,
+                keyword, location, jobType, minSalary, maxSalary, companyName,
+                sortOption,
                 PageRequest.of(page, size)
         );
 
         model.addAttribute("jobs", jobPage.getContent());
         model.addAttribute("jobPage", jobPage);
         model.addAttribute("jobTypes", List.of(JobType.values()));
-        model.addAttribute("sortOptions", List.of(SearchSortOption.values()));
+        model.addAttribute("sortOptions", List.of("newest", "highest_salary", "closing_date"));
         model.addAttribute("keyword", keyword);
         model.addAttribute("location", location);
         model.addAttribute("companyName", companyName);
         model.addAttribute("selectedJobType", jobType);
         model.addAttribute("minSalary", minSalary);
         model.addAttribute("maxSalary", maxSalary);
-        model.addAttribute("selectedSort", sort);
-        model.addAttribute("savedSearches", getSavedSearchesSafe());
+        model.addAttribute("selectedSort", sort.toLowerCase(Locale.ROOT));
         return "jobs/list";
-    }
-
-    @PostMapping("/save-search")
-    @PreAuthorize("hasRole('CANDIDATE')")
-    public String saveSearch(@ModelAttribute SavedSearchDto savedSearchDto,
-                             RedirectAttributes redirectAttributes) {
-        jobService.saveSearch(savedSearchDto);
-        redirectAttributes.addFlashAttribute("successMessage", "Search saved successfully.");
-        return "redirect:/jobs";
     }
 
     @GetMapping("/{id}")
@@ -143,11 +135,14 @@ public class JobMvcController {
         return "redirect:/jobs";
     }
 
-    private List<SavedSearchDto> getSavedSearchesSafe() {
-        try {
-            return jobService.getSavedSearchesForCurrentCandidate();
-        } catch (Exception ex) {
-            return List.of();
+    private SearchSortOption parseSort(String sort) {
+        if (sort == null) {
+            return SearchSortOption.NEWEST;
         }
+        return switch (sort.toLowerCase(Locale.ROOT)) {
+            case "highest_salary" -> SearchSortOption.HIGHEST_SALARY;
+            case "closing_date" -> SearchSortOption.CLOSING_DATE;
+            default -> SearchSortOption.NEWEST;
+        };
     }
 }

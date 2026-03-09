@@ -2,7 +2,6 @@ package com.narek.jobportal.controller.rest;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
-import com.narek.jobportal.dto.SavedSearchDto;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.entity.SearchSortOption;
 import com.narek.jobportal.service.JobService;
@@ -83,18 +82,6 @@ public class JobController {
     public String closeJob(@PathVariable Long id) {
         jobService.closeJob(id);
         return "Job closed";
-    }
-
-    @PostMapping("/saved-searches")
-    @PreAuthorize("hasRole('CANDIDATE')")
-    public SavedSearchDto saveSearch(@RequestBody SavedSearchDto dto) {
-        return jobService.saveSearch(dto);
-    }
-
-    @GetMapping("/saved-searches")
-    @PreAuthorize("hasRole('CANDIDATE')")
-    public List<SavedSearchDto> getSavedSearches() {
-        return jobService.getSavedSearchesForCurrentCandidate();
     }
 
     @DeleteMapping("/{id}")

@@ -22,9 +22,9 @@ public class ApplicationCreateUpdateDto {
     @WordCount(max = 300, message = "Internal notes must be 300 words or fewer")
     private String internalNotes;
 
-    public ApplicationCreateUpdateDto(Long jobId, String resumeUrl) {
+    public ApplicationCreateUpdateDto(Long jobId, String coverLetter) {
         this.jobId = jobId;
-        this.coverLetter = resumeUrl;
+        this.coverLetter = coverLetter;
         this.internalNotes = null;
     }
 }

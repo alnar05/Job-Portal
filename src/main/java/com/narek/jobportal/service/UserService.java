@@ -13,6 +13,7 @@ public interface UserService {
     Optional<User> getUserById(Long id);
     Optional<User> getUserByEmail(String email);
     void deleteUser(Long id);
+    Page<User> getAllUsers(Pageable pageable);
     Page<User> getUsersByRole(Role role, Pageable pageable);
     void setEnabled(Long id, boolean enabled);
     void updateStatus(Long id, UserStatus status);

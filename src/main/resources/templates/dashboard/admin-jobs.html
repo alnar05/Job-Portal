@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{layout :: head('Admin Jobs')}"></th:block></head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div class="container mt-3">
+    <h3>All Jobs</h3>
+    <table class="table table-sm"><tr><th>Title</th><th>Employer</th><th>Status</th></tr>
+        <tr th:each="j : ${jobs}"><td th:text="${j.title}"></td><td th:text="${j.companyName}"></td><td th:text="${j.status}"></td></tr>
+    </table>
+</div>
+</body>
+</html>

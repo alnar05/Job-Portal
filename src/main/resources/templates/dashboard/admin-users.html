@@ -14,8 +14,9 @@
     </div>
 
     <div class="mb-3">
-        <a th:href="@{/admin/users(role='EMPLOYER')}" class="btn" th:classappend="${selectedRole.name() == 'EMPLOYER'} ? ' btn-primary' : ' btn-outline-primary'">Employers</a>
-        <a th:href="@{/admin/users(role='CANDIDATE')}" class="btn" th:classappend="${selectedRole.name() == 'CANDIDATE'} ? ' btn-primary' : ' btn-outline-primary'">Candidates</a>
+        <a th:href="@{/admin/users}" class="btn" th:classappend="${selectedRole == null} ? ' btn-primary' : ' btn-outline-primary'">All</a>
+        <a th:href="@{/admin/users(role='EMPLOYER')}" class="btn" th:classappend="${selectedRole != null and selectedRole.name() == 'EMPLOYER'} ? ' btn-primary' : ' btn-outline-primary'">Employers</a>
+        <a th:href="@{/admin/users(role='CANDIDATE')}" class="btn" th:classappend="${selectedRole != null and selectedRole.name() == 'CANDIDATE'} ? ' btn-primary' : ' btn-outline-primary'">Candidates</a>
     </div>
 
     <div class="card shadow-sm">

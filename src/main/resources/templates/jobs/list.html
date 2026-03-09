@@ -18,9 +18,12 @@
             <div class="col-md-3"><input name="keyword" class="form-control" placeholder="Keyword" th:value="${keyword}"></div>
             <div class="col-md-2"><input name="location" class="form-control" placeholder="Location" th:value="${location}"></div>
             <div class="col-md-2"><input name="companyName" class="form-control" placeholder="Company" th:value="${companyName}"></div>
+            <div class="col-md-2"><input type="number" min="0" step="0.01" name="minSalary" class="form-control" placeholder="Min Salary" th:value="${minSalary}"></div>
+            <div class="col-md-2"><input type="number" min="0" step="0.01" name="maxSalary" class="form-control" placeholder="Max Salary" th:value="${maxSalary}"></div>
             <div class="col-md-2">
                 <select name="sort" class="form-select">
-                    <option th:each="opt : ${sortOptions}" th:value="${opt}" th:text="${opt}" th:selected="${opt == selectedSort}"></option>
+                    <option th:each="opt : ${sortOptions}" th:value="${opt}" th:selected="${opt == selectedSort}"
+                            th:text="${opt == 'highest_salary' ? 'Highest salary' : (opt == 'closing_date' ? 'Closing date' : 'Newest')}"></option>
                 </select>
             </div>
             <div class="col-md-3 d-flex gap-2">
@@ -29,21 +32,6 @@
             </div>
         </div>
     </form>
-
-    <form sec:authorize="hasRole('CANDIDATE')" method="post" th:action="@{/jobs/save-search}" class="card card-body mb-3">
-        <div class="row g-2">
-            <div class="col-md-3"><input class="form-control" name="name" placeholder="Save this search as..."></div>
-            <input type="hidden" name="keyword" th:value="${keyword}">
-            <input type="hidden" name="location" th:value="${location}">
-            <input type="hidden" name="companyName" th:value="${companyName}">
-            <button class="btn btn-outline-dark col-md-2" type="submit">Save Search</button>
-        </div>
-    </form>
-
-    <div sec:authorize="hasRole('CANDIDATE')" class="mb-3" th:if="${!#lists.isEmpty(savedSearches)}">
-        <strong>Saved Searches:</strong>
-        <span th:each="s : ${savedSearches}" class="badge text-bg-light border me-1" th:text="${s.name}"></span>
-    </div>
 
     <div class="row g-3" th:if="${!#lists.isEmpty(jobs)}">
         <div class="col-md-6 col-lg-4" th:each="job : ${jobs}">

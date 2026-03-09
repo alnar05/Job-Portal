@@ -55,6 +55,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Page<User> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+
+    @Override
     public Page<User> getUsersByRole(Role role, Pageable pageable) {
         return userRepository.findAllByRole(role, pageable);
     }
@@ -63,8 +68,13 @@ public class UserServiceImpl implements UserService {
     public void setEnabled(Long id, boolean enabled) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
+        if (user.getStatus() == UserStatus.BANNED && enabled) {
+            throw new IllegalArgumentException("BANNED users cannot be re-enabled from toggle action");
+        }
         user.setEnabled(enabled);
-        user.setStatus(enabled ? UserStatus.ACTIVE : UserStatus.DISABLED);
+        if (user.getStatus() != UserStatus.BANNED) {
+            user.setStatus(enabled ? UserStatus.ACTIVE : UserStatus.DISABLED);
+        }
         userRepository.save(user);
     }
 
@@ -72,6 +82,9 @@ public class UserServiceImpl implements UserService {
     public void updateStatus(Long id, UserStatus status) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
+        if (user.getStatus() == UserStatus.BANNED && status != UserStatus.BANNED) {
+            throw new IllegalArgumentException("BANNED users require manual admin change and cannot be reverted here");
+        }
         user.setStatus(status);
         user.setEnabled(status == UserStatus.ACTIVE);
         userRepository.save(user);

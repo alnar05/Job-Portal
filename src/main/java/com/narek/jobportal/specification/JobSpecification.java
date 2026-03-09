@@ -1,6 +1,7 @@
 package com.narek.jobportal.specification;
 
 import com.narek.jobportal.entity.Job;
+import com.narek.jobportal.entity.JobStatus;
 import com.narek.jobportal.entity.JobType;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -13,6 +14,14 @@ public final class JobSpecification {
 
     public static Specification<Job> notExpired() {
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("closingDate"), LocalDate.now());
+    }
+
+    public static Specification<Job> isOpen() {
+        return (root, query, cb) -> cb.equal(root.get("status"), JobStatus.OPEN);
+    }
+
+    public static Specification<Job> publiclyVisible() {
+        return Specification.where(notExpired()).and(isOpen());
     }
 
     public static Specification<Job> hasKeyword(String keyword) {

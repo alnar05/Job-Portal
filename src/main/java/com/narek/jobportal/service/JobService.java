@@ -2,7 +2,6 @@ package com.narek.jobportal.service;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
-import com.narek.jobportal.dto.SavedSearchDto;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.entity.SearchSortOption;
 import org.springframework.data.domain.Page;
@@ -12,6 +11,7 @@ import java.util.List;
 
 public interface JobService {
     List<JobResponseDto> getAllJobs();
+    List<JobResponseDto> getAllJobsForManagement();
     JobResponseDto getJobById(Long id);
     List<JobResponseDto> getJobsByEmployerId(Long employerId);
     void deleteJob(Long id);
@@ -48,10 +48,6 @@ public interface JobService {
             SearchSortOption sortOption,
             Pageable pageable
     );
-
-    SavedSearchDto saveSearch(SavedSearchDto savedSearchDto);
-
-    List<SavedSearchDto> getSavedSearchesForCurrentCandidate();
 
     void expireOverdueJobs();
 }

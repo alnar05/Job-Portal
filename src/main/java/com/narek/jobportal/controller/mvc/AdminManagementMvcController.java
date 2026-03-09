@@ -36,9 +36,35 @@ public class AdminManagementMvcController {
     @GetMapping("/panel")
     public String panel(Model model) {
         model.addAttribute("users", userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 50)).getContent());
-        model.addAttribute("jobs", jobService.searchJobs(null, null, null, null, null, null, null, PageRequest.of(0, 100)).getContent());
+        model.addAttribute("jobs", jobService.getAllJobsForManagement());
         model.addAttribute("applications", applicationService.getAllApplications());
         return "dashboard/admin-panel";
+    }
+
+    @GetMapping("/jobs")
+    public String jobs(Model model) {
+        model.addAttribute("jobs", jobService.getAllJobsForManagement());
+        return "dashboard/admin-jobs";
+    }
+
+    @GetMapping("/applications")
+    public String applications(Model model) {
+        model.addAttribute("applications", applicationService.getAllApplications());
+        return "dashboard/admin-applications";
+    }
+
+    @GetMapping("/reports")
+    public String reports(Model model) {
+        model.addAttribute("totalJobs", (long) jobService.getAllJobsForManagement().size());
+        model.addAttribute("totalApplications", applicationService.getAllApplications().size());
+        model.addAttribute("totalCandidates", userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 1)).getTotalElements());
+        model.addAttribute("totalEmployers", userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 1)).getTotalElements());
+        return "dashboard/admin-reports";
+    }
+
+    @GetMapping("/settings")
+    public String settings() {
+        return "dashboard/admin-settings";
     }
 
     @PostMapping("/users/{id}/status")

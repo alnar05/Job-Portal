@@ -27,6 +27,8 @@ public interface ApplicationService {
 
     ApplicationResponseDto rejectApplication(Long applicationId);
 
+    ApplicationResponseDto cancelApplicationDecision(Long applicationId);
+
     void bulkUpdateStatus(List<Long> ids, boolean accept, String internalNotes);
 
     ApplicationResponseDto addInternalNotes(Long applicationId, String internalNotes);

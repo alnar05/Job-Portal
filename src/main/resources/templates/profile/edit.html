@@ -16,7 +16,6 @@
             </div>
             <div th:unless="${isEmployer}">
                 <input class="form-control mb-2" th:field="*{fullName}" placeholder="Full Name">
-                <input class="form-control mb-2" th:field="*{resumeUrl}" placeholder="Resume URL">
                 <input class="form-control mb-2" type="file" name="resumeFile" accept=".pdf,.doc,.docx">
             </div>
             <button type="submit" class="btn btn-primary">Save Changes</button>

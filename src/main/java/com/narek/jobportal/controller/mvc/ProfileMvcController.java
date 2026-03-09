@@ -49,7 +49,6 @@ public class ProfileMvcController {
                 Candidate candidate = candidateService.getCandidateByUserEmail(authentication.getName())
                         .orElseThrow(() -> new EntityNotFoundException("Candidate profile not found"));
                 profileForm.setFullName(candidate.getFullName());
-                profileForm.setResumeUrl(candidate.getResumeUrl());
             }
             model.addAttribute("profileForm", profileForm);
         }

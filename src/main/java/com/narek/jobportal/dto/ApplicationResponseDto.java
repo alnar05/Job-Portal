@@ -29,7 +29,7 @@ public class ApplicationResponseDto {
                                   String jobTitle,
                                   Long candidateId,
                                   String candidateName,
-                                  String resumeUrl,
+                                  String coverLetter,
                                   LocalDateTime appliedAt,
                                   ApplicationStatus status) {
         this.id = id;
@@ -37,7 +37,7 @@ public class ApplicationResponseDto {
         this.jobTitle = jobTitle;
         this.candidateId = candidateId;
         this.candidateName = candidateName;
-        this.coverLetter = resumeUrl;
+        this.coverLetter = coverLetter;
         this.internalNotes = null;
         this.appliedAt = appliedAt;
         this.status = status;

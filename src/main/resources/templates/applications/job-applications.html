@@ -3,6 +3,7 @@
 <head><th:block th:replace="~{layout :: head('Job Applications | Job Portal')}"></th:block></head>
 <body class="bg-light">
 <div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
 <div class="container">
     <h2>Applications for <span th:text="${job.title}"></span></h2>
     <form method="post" th:action="@{/applications/bulk}">
@@ -19,7 +20,18 @@
                 <td th:text="${app.candidateName}"></td>
                 <td th:text="${app.status}"></td>
                 <td th:text="${app.internalNotes}"></td>
-                <td><a th:href="@{/applications/{id}(id=${app.id})}" class="btn btn-sm btn-outline-primary">View</a></td>
+                <td class="d-flex gap-1">
+                    <a th:href="@{/applications/{id}(id=${app.id})}" class="btn btn-sm btn-outline-primary">View</a>
+                    <form th:action="@{/employer/applications/{id}/accept(id=${app.id})}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-success" type="submit">Accept</button>
+                    </form>
+                    <form th:action="@{/employer/applications/{id}/reject(id=${app.id})}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-danger" type="submit">Reject</button>
+                    </form>
+                    <form th:action="@{/employer/applications/{id}/cancel(id=${app.id})}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-outline-secondary" type="submit">Cancel</button>
+                    </form>
+                </td>
             </tr></tbody>
         </table>
     </form>
