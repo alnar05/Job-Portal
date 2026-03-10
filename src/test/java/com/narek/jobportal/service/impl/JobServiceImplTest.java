@@ -4,6 +4,7 @@ import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.Employer;
 import com.narek.jobportal.entity.Job;
+import com.narek.jobportal.entity.JobStatus;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.repository.ApplicationRepository;
 import com.narek.jobportal.repository.JobRepository;
@@ -22,8 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -109,6 +109,19 @@ class JobServiceImplTest {
         assertEquals("New desc", result.getDescription());
         assertEquals(20d, result.getSalary());
         verify(jobRepository).save(existing);
+    }
+
+    @Test
+    void updateJob_shouldRejectEmployerChanges_whenExpired() {
+        Job existing = buildJob(11L, "Old", "Old desc", 10d, buildEmployer(70L, "ABC"));
+        existing.setClosingDate(LocalDate.now().minusDays(1));
+        existing.setStatus(JobStatus.ACTIVE);
+        JobCreateUpdateDto dto = new JobCreateUpdateDto("New", "New desc", 20d, JobType.CONTRACT, "Yerevan", LocalDate.now().plusDays(5));
+
+        given(jobRepository.findById(11L)).willReturn(Optional.of(existing));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> jobService.updateJob(11L, dto));
+
+        assertTrue(exception.getMessage().contains("Expired jobs cannot be modified"));
     }
 
     @Test

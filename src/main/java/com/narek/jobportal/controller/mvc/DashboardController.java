@@ -66,9 +66,9 @@ public class DashboardController {
         long expiredJobs = 0;
 
         for (Job job : jobs) {
-            if (job.getStatus() == JobStatus.CLOSED) {
+            if (job.getEffectiveStatus() == JobStatus.CLOSED) {
                 closedJobs++;
-            } else if (job.getClosingDate() != null && job.getClosingDate().isBefore(LocalDate.now())) {
+            } else if (job.getEffectiveStatus() == JobStatus.EXPIRED) {
                 expiredJobs++;
             } else {
                 activeJobs++;
@@ -145,7 +145,11 @@ public class DashboardController {
     @PreAuthorize("hasRole('EMPLOYER')")
     public String employerDashboard(Model model) {
         Employer employer = authService.getCurrentEmployer();
-        model.addAttribute("jobs", jobService.getJobsByEmployerId(employer.getId()));
+        List<JobResponseDto> jobs = jobService.getJobsByEmployerId(employer.getId());
+
+        model.addAttribute("activeJobs", jobs.stream().filter(j -> j.getStatus() == JobStatus.ACTIVE).toList());
+        model.addAttribute("expiredJobs", jobs.stream().filter(j -> j.getStatus() == JobStatus.EXPIRED).toList());
+        model.addAttribute("closedJobs", jobs.stream().filter(j -> j.getStatus() == JobStatus.CLOSED).toList());
         return "dashboard/employer";
     }
 

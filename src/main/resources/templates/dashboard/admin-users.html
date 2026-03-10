@@ -53,7 +53,9 @@
                     </thead>
                     <tbody>
                     <tr th:each="user : ${users.content}">
-                        <td><input class="u-check" type="checkbox" name="userIds" th:value="${user.id}"></td>
+                        <td>
+                            <input class="u-check" type="checkbox" name="userIds" th:value="${user.id}" th:disabled="${#sets.contains(user.roles, T(com.narek.jobportal.entity.Role).ADMIN)}">
+                        </td>
                         <td th:text="${user.id}"></td>
                         <td th:text="${user.email}"></td>
                         <td th:text="${user.roles}"></td>

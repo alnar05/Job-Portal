@@ -4,6 +4,8 @@ import com.narek.jobportal.entity.Job;
 import com.narek.jobportal.entity.JobStatus;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
+
 public class AdminJobSpecification {
     public static Specification<Job> hasStatus(JobStatus status) {
         return (root, query, cb) -> status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
@@ -19,5 +21,9 @@ public class AdminJobSpecification {
 
     public static Specification<Job> byEmployer(Long employerId) {
         return (root, query, cb) -> employerId == null ? cb.conjunction() : cb.equal(root.get("employer").get("id"), employerId);
+    }
+
+    public static Specification<Job> expiredOnly() {
+        return (root, query, cb) -> cb.lessThan(root.get("closingDate"), LocalDate.now());
     }
 }

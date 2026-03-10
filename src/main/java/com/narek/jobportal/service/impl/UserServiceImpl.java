@@ -11,6 +11,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -56,6 +57,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
 
+        validateAdminAccountIsProtected(user);
+
         if (user.getCandidate() != null && user.getCandidate().getId() != null) {
             applicationRepository.deleteByCandidateId(user.getCandidate().getId());
         }
@@ -73,6 +76,9 @@ public class UserServiceImpl implements UserService {
     public void setEnabled(Long id, boolean enabled) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
+
+        validateAdminAccountIsProtected(user);
+
         user.setEnabled(enabled);
         userRepository.save(user);
         if (!enabled) {
@@ -96,12 +102,18 @@ public class UserServiceImpl implements UserService {
             return;
         }
         List<User> users = userRepository.findAllById(userIds);
+        users.forEach(this::validateAdminAccountIsProtected);
+
         users.forEach(user -> user.setEnabled(enabled));
         userRepository.saveAll(users);
         if (!enabled) {
-            users.stream()
-                    .map(User::getEmail)
-                    .forEach(this::expireUserSessions);
+            users.stream().map(User::getEmail).forEach(this::expireUserSessions);
+        }
+    }
+
+    private void validateAdminAccountIsProtected(User targetUser) {
+        if (targetUser.getRoles() != null && targetUser.getRoles().contains(Role.ADMIN)) {
+            throw new AccessDeniedException("Admin accounts cannot be modified from admin management.");
         }
     }
 

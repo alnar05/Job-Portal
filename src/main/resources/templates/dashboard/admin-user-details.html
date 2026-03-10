@@ -19,17 +19,18 @@
             <p><strong>Roles:</strong> <span th:text="${user.roles}"></span></p>
             <p><strong>Status:</strong> <span th:text="${user.enabled ? 'Enabled' : 'Disabled'}"></span></p>
 
-            <div class="d-flex gap-2 mt-3">
-                <form th:action="@{/admin/users/{id}/status(id=${user.id})}" method="post">
+            <div class="d-flex gap-2 mt-3" th:with="canManage=${!#sets.contains(user.roles, T(com.narek.jobportal.entity.Role).ADMIN)}">
+                <form th:if="${canManage}" th:action="@{/admin/users/{id}/status(id=${user.id})}" method="post">
                     <input type="hidden" name="enabled" th:value="${!user.enabled}">
                     <button type="submit" class="btn btn-warning"
                             th:text="${user.enabled ? 'Disable Account' : 'Enable Account'}"></button>
                 </form>
 
-                <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
+                <form th:if="${canManage}" th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
                       onsubmit="return confirm('Delete this user account?');">
                     <button type="submit" class="btn btn-danger">Delete User</button>
                 </form>
+                <form th:if="${canManage}" th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
             </div>
         </div>
     </div>

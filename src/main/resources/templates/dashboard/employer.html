@@ -16,33 +16,44 @@
         </div>
     </div>
 
-    <div class="card shadow-sm" th:if="${!#lists.isEmpty(jobs)}">
-        <div class="table-responsive">
+    <div th:replace="~{dashboard/employer :: section('Active Jobs', ${activeJobs}, false)}"></div>
+    <div th:replace="~{dashboard/employer :: section('Expired Jobs', ${expiredJobs}, true)}"></div>
+    <div th:replace="~{dashboard/employer :: section('Closed Jobs', ${closedJobs}, false)}"></div>
+</div>
+
+<th:block th:fragment="section(title, jobs, expired)">
+    <div class="card shadow-sm mb-3">
+        <div class="card-header" th:text="${title}"></div>
+        <div class="card-body" th:if="${#lists.isEmpty(jobs)}">No jobs in this group.</div>
+        <div class="table-responsive" th:if="${!#lists.isEmpty(jobs)}">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                 <tr>
                     <th>Job Title</th>
-                    <th>Salary</th>
+                    <th>Status</th>
+                    <th>Expires on</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="job : ${jobs}">
                     <td th:text="${job.title}"></td>
-                    <td th:text="${'$' + #numbers.formatDecimal(job.salary, 1, 'COMMA', 2, 'POINT')}"></td>
-                    <td>
+                    <td th:text="${job.status}"></td>
+                    <td th:text="${job.closingDate}"></td>
+                    <td class="d-flex gap-1 flex-wrap">
                         <a th:href="@{/jobs/{id}(id=${job.id})}" class="btn btn-sm btn-outline-primary">View</a>
-                        <a th:href="@{/jobs/edit/{id}(id=${job.id})}" class="btn btn-sm btn-outline-warning">Edit</a>
-                        <a th:href="@{/applications/job/{jobId}(jobId=${job.id})}" class="btn btn-sm btn-outline-dark">Applications</a>
-                    </td>
+                        <a th:href="@{/applications/job/{jobId}(jobId=${job.id})}" class="btn btn-sm btn-outline-dark">Applicants</a>
+                        <a th:if="${expired}" th:href="@{/jobs/{id}/duplicate(id=${job.id})}"
+                           class="btn btn-sm btn-outline-success">Duplicate</a>
+                        <a th:if="${!expired}" th:href="@{/jobs/edit/{id}(id=${job.id})}"
+                           class="btn btn-sm btn-outline-warning">Edit</a></td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="alert alert-info" th:if="${#lists.isEmpty(jobs)}">You haven't posted any jobs yet.</div>
-</div>
+</th:block>
 
-<th:block th:replace="~{layout :: scripts}"></th:block>
+    <th:block th:replace="~{layout :: scripts}"></th:block>
 </body>
 </html>

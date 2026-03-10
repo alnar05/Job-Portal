@@ -8,7 +8,7 @@
 <div th:replace="~{layout :: flash-messages}"></div>
 
 <div class="container">
-    <h2>Admin Application Oversight</h2>
+    <h2>Admin Application Management</h2>
 
     <form class="row g-2 mb-3" method="get" th:action="@{/admin/applications}">
         <div class="col"><input class="form-control" name="candidateId" placeholder="Candidate ID" th:value="${filter.candidateId}"></div>

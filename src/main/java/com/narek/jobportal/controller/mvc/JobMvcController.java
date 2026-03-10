@@ -70,6 +70,23 @@ public class JobMvcController {
         return "jobs/details";
     }
 
+    @GetMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('ADMIN') or @authService.isCurrentEmployerJob(#id)")
+    public String duplicateJob(@PathVariable Long id, Model model) {
+        JobResponseDto job = jobService.getJobById(id);
+        JobCreateUpdateDto jobForm = new JobCreateUpdateDto(
+                job.getTitle(),
+                job.getDescription(),
+                job.getSalary(),
+                job.getJobType(),
+                job.getLocation(),
+                null
+        );
+        model.addAttribute("jobForm", jobForm);
+        model.addAttribute("successMessage", "Job duplicated into a new posting form. Set a new expiration date before posting.");
+        return "jobs/create";
+    }
+
     @GetMapping("/create")
     @PreAuthorize("hasRole('EMPLOYER')")
     public String showCreateForm(Model model) {

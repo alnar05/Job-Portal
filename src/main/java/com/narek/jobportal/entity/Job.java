@@ -77,10 +77,14 @@ public class Job {
     }
 
     public boolean isExpired() {
-        return LocalDate.now().isAfter(closingDate);
+        return closingDate != null && LocalDate.now().isAfter(closingDate);
+    }
+
+    public JobStatus getEffectiveStatus() {
+        return isExpired() ? JobStatus.EXPIRED : status;
     }
 
     public boolean isActive() {
-        return status == JobStatus.ACTIVE && !isExpired();
+        return getEffectiveStatus() == JobStatus.ACTIVE;
     }
 }

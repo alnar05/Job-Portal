@@ -2,6 +2,7 @@ package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.JobStatus;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
@@ -65,7 +66,7 @@ class JobMvcControllerTest {
     @Test
     @WithMockUser(username = "cand", roles = {"CANDIDATE"})
     void listJobs_shouldRenderJobsList_whenAuthenticated() throws Exception {
-        JobResponseDto job = new JobResponseDto(1L, "Java", "Desc", 100.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME");
+        JobResponseDto job = new JobResponseDto(1L, "Java", "Desc", 100.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME", JobStatus.ACTIVE);
         given(jobService.searchJobs(eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(job), PageRequest.of(0, 9), 1));
 
@@ -107,7 +108,7 @@ class JobMvcControllerTest {
     @Test
     @WithMockUser(username = "cand", roles = {"CANDIDATE"})
     void jobDetails_shouldRenderDetails_whenAuthenticated() throws Exception {
-        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "QA", "Tests", 90.0, com.narek.jobportal.entity.JobType.CONTRACT, "Paris", LocalDate.now().plusDays(7), "Globex"));
+        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "QA", "Tests", 90.0, JobType.CONTRACT, "Paris", LocalDate.now().plusDays(7), "Globex", JobStatus.ACTIVE));
 
         mockMvc.perform(get("/jobs/2"))
                 .andExpect(status().isOk())

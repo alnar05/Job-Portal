@@ -42,29 +42,35 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Transactional
     public List<JobResponseDto> getAllJobs() {
         logger.info("Fetching all active jobs");
         return jobRepository.findAll(JobSpecification.notExpired())
                 .stream()
+                .peek(this::normalizeStatus)
                 .filter(job -> job.getStatus() == JobStatus.ACTIVE)
                 .map(this::mapToResponse)
                 .toList();
     }
 
     @Override
+    @Transactional
     public JobResponseDto getJobById(Long id) {
         logger.info("Fetching job by id={}", id);
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
 
+        normalizeStatus(job);
         return mapToResponse(job);
     }
 
     @Override
+    @Transactional
     public List<JobResponseDto> getJobsByEmployerId(Long employerId) {
         logger.info("Fetching jobs for employerId={}", employerId);
         return jobRepository.findByEmployerId(employerId)
                 .stream()
+                .peek(this::normalizeStatus)
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -94,18 +100,26 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Transactional
     public JobResponseDto updateJob(Long id, JobCreateUpdateDto dto) {
         logger.info("Updating job id={}", id);
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
 
+        normalizeStatus(job);
+        if (job.getStatus() == JobStatus.EXPIRED) {
+            throw new IllegalArgumentException("Expired jobs cannot be modified. Duplicate the job to repost.");
+        }
+
         applyDto(job, dto);
+        normalizeStatus(job);
 
         Job updatedJob = jobRepository.save(job);
         return mapToResponse(updatedJob);
     }
 
     @Override
+    @Transactional
     public Page<JobResponseDto> searchJobs(String keyword,
                                            String location,
                                            JobType jobType,
@@ -119,16 +133,30 @@ public class JobServiceImpl implements JobService {
                 .and(JobSpecification.overlapsSalaryRange(minSalary, maxSalary))
                 .and(AdminJobSpecification.hasStatus(JobStatus.ACTIVE));
 
-        return jobRepository.findAll(spec, pageable).map(this::mapToResponse);
+        Page<Job> jobs = jobRepository.findAll(spec, pageable);
+        jobs.forEach(this::normalizeStatus);
+        return jobs.map(this::mapToResponse);
     }
 
     @Override
+    @Transactional
     public Page<Job> searchAdminJobs(AdminJobFilterDto filter, Pageable pageable) {
+        if (filter.getStatus() == JobStatus.EXPIRED) {
+            Specification<Job> spec = Specification.where(AdminJobSpecification.expiredOnly())
+                    .and(AdminJobSpecification.minSalary(filter.getMinSalary()))
+                    .and(AdminJobSpecification.maxSalary(filter.getMaxSalary()))
+                    .and(AdminJobSpecification.byEmployer(filter.getEmployerId()));
+            return jobRepository.findAll(spec, pageable).map(this::normalizeStatusAndReturn);
+        }
+
         Specification<Job> spec = Specification.where(AdminJobSpecification.hasStatus(filter.getStatus()))
                 .and(AdminJobSpecification.minSalary(filter.getMinSalary()))
                 .and(AdminJobSpecification.maxSalary(filter.getMaxSalary()))
                 .and(AdminJobSpecification.byEmployer(filter.getEmployerId()));
-        return jobRepository.findAll(spec, pageable);
+
+        Page<Job> jobs = jobRepository.findAll(spec, pageable);
+        jobs.forEach(this::normalizeStatus);
+        return jobs;
     }
 
     @Override
@@ -138,8 +166,14 @@ public class JobServiceImpl implements JobService {
             return;
         }
         List<Job> jobs = jobRepository.findAllById(jobIds);
-        jobs.forEach(job -> job.setStatus(reopen ? JobStatus.ACTIVE : JobStatus.CLOSED));
-        jobRepository.saveAll(jobs);
+        jobs.forEach(this::normalizeStatus);
+
+        List<Job> mutableJobs = jobs.stream()
+                .filter(job -> job.getStatus() != JobStatus.EXPIRED)
+                .toList();
+
+        mutableJobs.forEach(job -> job.setStatus(reopen ? JobStatus.ACTIVE : JobStatus.CLOSED));
+        jobRepository.saveAll(mutableJobs);
     }
 
     @Override
@@ -166,7 +200,19 @@ public class JobServiceImpl implements JobService {
         dto.setLocation(job.getLocation());
         dto.setClosingDate(job.getClosingDate());
         dto.setCompanyName(job.getEmployer().getCompanyName());
+        dto.setStatus(job.getEffectiveStatus());
         return dto;
     }
 
+    private void normalizeStatus(Job job) {
+        if (job.isExpired() && job.getStatus() != JobStatus.EXPIRED) {
+            job.setStatus(JobStatus.EXPIRED);
+            jobRepository.save(job);
+        }
+    }
+
+    private Job normalizeStatusAndReturn(Job job) {
+        normalizeStatus(job);
+        return job;
+    }
 }

@@ -5,6 +5,7 @@ import com.narek.jobportal.dto.ApplicationResponseDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.ApplicationStatus;
 import com.narek.jobportal.entity.Candidate;
+import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
@@ -24,12 +25,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -88,7 +91,7 @@ class ApplicationMvcControllerTest {
     @Test
     @WithMockUser(username = "cand", roles = {"CANDIDATE"})
     void applyForJob_shouldRedirectWithError_whenValidationFails() throws Exception {
-        ConstraintViolation<ApplicationCreateUpdateDto> violation = org.mockito.Mockito.mock(ConstraintViolation.class);
+        ConstraintViolation<ApplicationCreateUpdateDto> violation = mock(ConstraintViolation.class);
         given(violation.getMessage()).willReturn("Cover letter must be 200 words or fewer");
         given(validator.validate(any(ApplicationCreateUpdateDto.class))).willReturn(Set.of(violation));
 
@@ -123,7 +126,7 @@ class ApplicationMvcControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void applicationsForJob_shouldRenderView_whenAdmin() throws Exception {
-        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "Java", "Desc", 1000.0, com.narek.jobportal.entity.JobType.FULL_TIME, "Berlin", java.time.LocalDate.now().plusDays(10), "ACME"));
+        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "Java", "Desc", 1000.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME"));
         given(applicationService.getApplicationsByJobId(2L)).willReturn(List.of());
 
         mockMvc.perform(get("/applications/job/2"))
