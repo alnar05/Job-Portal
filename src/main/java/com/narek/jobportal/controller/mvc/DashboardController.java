@@ -7,6 +7,7 @@ import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
 import com.narek.jobportal.service.UserService;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -51,22 +52,28 @@ public class DashboardController {
     @GetMapping("/dashboard/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public String adminDashboard(Model model) {
-        List<JobResponseDto> jobs = jobService.getAllJobs();
+        List<Job> jobs = jobService.searchAdminJobs(
+                new AdminJobFilterDto(), PageRequest.of(0, 10_000, Sort.by(Sort.Direction.DESC, "createdAt")))
+                .getContent();
         List<ApplicationResponseDto> applications = applicationService.getAllApplications();
-        List<User> employerUsers = userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 5))
+        List<User> employerUsers = userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 10_000))
                 .getContent();
-        List<User> candidateUsers = userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 5))
+        List<User> candidateUsers = userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 10_000))
                 .getContent();
 
-        long activeJobs = jobs.stream()
-                .filter(j -> j.getClosingDate() != null &&
-                        j.getClosingDate().isAfter(LocalDate.now()))
-                .count();
+        long activeJobs = 0;
+        long closedJobs = 0;
+        long expiredJobs = 0;
 
-        long closedJobs = jobs.stream()
-                .filter(j -> j.getClosingDate() != null &&
-                        j.getClosingDate().isBefore(LocalDate.now()))
-                .count();
+        for (Job job : jobs) {
+            if (job.getStatus() == JobStatus.CLOSED) {
+                closedJobs++;
+            } else if (job.getClosingDate() != null && job.getClosingDate().isBefore(LocalDate.now())) {
+                expiredJobs++;
+            } else {
+                activeJobs++;
+            }
+        }
 
         long pendingApplications = applications.stream()
                 .filter(a -> a.getStatus() == ApplicationStatus.REVIEWED
@@ -94,7 +101,7 @@ public class DashboardController {
                 .totalJobs(jobs.size())
                 .activeJobs(activeJobs)
                 .closedJobs(closedJobs)
-                .expiredJobs(0)
+                .expiredJobs(expiredJobs)
                 .totalApplications(applications.size())
                 .pendingApplications(pendingApplications)
                 .acceptedApplications(acceptedApplications)
@@ -110,9 +117,24 @@ public class DashboardController {
                 .jobsOverTime(List.of())
                 .applicationsOverTime(List.of())
                 .usersOverTime(List.of())
-                .recentJobs(List.of())
-                .recentApplications(List.of())
-                .recentUsers(List.of())
+                .recentJobs(jobService.getRecentJobs(5).stream()
+                        .map(job -> new ActivityItemDto(
+                                job.getTitle(),
+                                job.getEmployer().getCompanyName(),
+                                String.valueOf(job.getCreatedAt())))
+                        .toList())
+                .recentApplications(applicationService.getRecentApplications(5).stream()
+                        .map(application -> new ActivityItemDto(
+                                application.getJobTitle(),
+                                application.getCandidateName(),
+                                String.valueOf(application.getAppliedAt())))
+                        .toList())
+                .recentUsers(userService.getRecentUsers(5).stream()
+                        .map(user -> new ActivityItemDto(
+                                user.getEmail(),
+                                user.getRoles().stream().findFirst().map(Enum::name).orElse("USER"),
+                                String.valueOf(user.getCreatedAt())))
+                        .toList())
                 .build();
 
         model.addAttribute("stats", stats);

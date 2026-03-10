@@ -11,6 +11,9 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +25,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ApplicationRepository applicationRepository;
+    private final SessionRegistry sessionRegistry;
 
-    public UserServiceImpl(UserRepository userRepository, ApplicationRepository applicationRepository) {
+    public UserServiceImpl(UserRepository userRepository,
+                           ApplicationRepository applicationRepository,
+                           SessionRegistry sessionRegistry) {
         this.userRepository = userRepository;
         this.applicationRepository = applicationRepository;
+        this.sessionRegistry = sessionRegistry;
     }
 
     @Override
@@ -62,11 +69,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void setEnabled(Long id, boolean enabled) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id " + id));
         user.setEnabled(enabled);
         userRepository.save(user);
+        if (!enabled) {
+            expireUserSessions(user.getEmail());
+        }
     }
 
     @Override
@@ -87,6 +98,21 @@ public class UserServiceImpl implements UserService {
         List<User> users = userRepository.findAllById(userIds);
         users.forEach(user -> user.setEnabled(enabled));
         userRepository.saveAll(users);
+        if (!enabled) {
+            users.stream()
+                    .map(User::getEmail)
+                    .forEach(this::expireUserSessions);
+        }
+    }
+
+    private void expireUserSessions(String email) {
+        sessionRegistry.getAllPrincipals().forEach(principal -> {
+            if (principal instanceof UserDetails userDetails
+                    && userDetails.getUsername().equals(email)) {
+                List<SessionInformation> sessions = sessionRegistry.getAllSessions(principal, false);
+                sessions.forEach(SessionInformation::expireNow);
+            }
+        });
     }
 
     @Override
