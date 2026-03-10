@@ -81,7 +81,7 @@ public class DashboardController {
                 .applicationsOverTime(groupDates(applications.stream().collect(Collectors.groupingBy(a -> a.getAppliedAt().toLocalDate(), Collectors.counting()))))
                 .usersOverTime(groupDates(users.stream().collect(Collectors.groupingBy(u -> u.getCreatedAt().toLocalDate(), Collectors.counting()))))
                 .recentJobs(jobService.getRecentJobs(5).stream().map(j -> new ActivityItemDto(j.getTitle(), j.getEmployer().getCompanyName(), j.getCreatedAt().toString())).toList())
-                .recentApplications(applicationService.getRecentApplications(5).stream().map(a -> new ActivityItemDto(a.getCandidateEmail(), a.getJobTitle(), a.getAppliedAt().toString())).toList())
+                .recentApplications(applicationService.getRecentApplications(5).stream().map(a -> new ActivityItemDto(a.getCandidateName(), a.getJobTitle(), a.getAppliedAt().toString())).toList())
                 .recentUsers(userService.getRecentUsers(5).stream().map(u -> new ActivityItemDto(u.getEmail(), u.getRoles().toString(), u.getCreatedAt().toString())).toList())
                 .build();
 

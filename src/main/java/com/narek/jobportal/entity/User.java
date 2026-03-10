@@ -51,4 +51,21 @@ public class User {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public User(Long id,
+                String email,
+                String password,
+                boolean enabled,
+                Set<Role> roles,
+                Employer employer,
+                Candidate candidate) {
+        this.id = id;
+        this.email = email;
+        this.password = password;
+        this.enabled = enabled;
+        this.roles = roles;
+        this.employer = employer;
+        this.candidate = candidate;
+        this.createdAt = LocalDateTime.now();
+    }
 }

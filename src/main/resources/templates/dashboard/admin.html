@@ -11,9 +11,43 @@
 <div class="container" sec:authorize="hasRole('ADMIN')">
     <h2 class="mb-3">Admin Dashboard</h2>
     <div class="row g-3 mb-4">
-        <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Jobs</h6><div class="h4" th:text="${stats.totalJobs}"></div><small>Active: <span th:text="${stats.activeJobs}"></span> | Closed: <span th:text="${stats.closedJobs}"></span></small></div></div></div>
-        <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Applications</h6><div class="h4" th:text="${stats.totalApplications}"></div><small>Pending: <span th:text="${stats.pendingApplications}"></span></small></div></div></div>
-        <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Users</h6><div class="h4" th:text="${stats.totalUsers}"></div><small>Enabled: <span th:text="${stats.usersByStatus['ENABLED']}"></span></small></div></div></div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Total Jobs</h6>
+                    <div class="h4" th:text="${stats.totalJobs}"></div>
+                    <small>Active:
+                        <span th:text="${stats.activeJobs}"></span>
+                        | Closed:
+                        <span th:text="${stats.closedJobs}"></span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Total Applications</h6>
+                    <div class="h4" th:text="${stats.totalApplications}"></div>
+                    <small>Pending:
+                        <span th:text="${stats.pendingApplications}">
+
+                        </span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Total Users</h6>
+                    <div class="h4" th:text="${stats.totalUsers}"></div>
+                    <small>Enabled:
+                    <span th:text="${stats.usersByStatus['ENABLED']}"></span>
+                    </small>
+                </div>
+            </div>
+        </div>
         <div class="col-md-3 d-grid gap-2">
             <a th:href="@{/admin/users}" class="btn btn-outline-primary">Manage Users</a>
             <a th:href="@{/admin/jobs}" class="btn btn-outline-primary">Manage Jobs</a>
@@ -28,7 +62,18 @@
     </div>
 
     <div class="row g-3 mt-1">
-        <div class="col-md-4"><div class="card"><div class="card-header">Last 5 Jobs</div><ul class="list-group list-group-flush"><li class="list-group-item" th:each="item:${stats.recentJobs}"><strong th:text="${item.title}"></strong><br><small th:text="${item.subtitle + ' • ' + item.timestamp}"></small></li></ul></div></div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Last 5 Jobs</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item" th:each="item:${stats.recentJobs}">
+                        <strong th:text="${item.title}"></strong>
+                        <br>
+                        <small th:text="${item.subtitle + ' • ' + item.timestamp}"></small>
+                    </li>
+                </ul>
+            </div>
+        </div>
         <div class="col-md-4"><div class="card"><div class="card-header">Last 5 Applications</div><ul class="list-group list-group-flush"><li class="list-group-item" th:each="item:${stats.recentApplications}"><strong th:text="${item.title}"></strong><br><small th:text="${item.subtitle + ' • ' + item.timestamp}"></small></li></ul></div></div>
         <div class="col-md-4"><div class="card"><div class="card-header">Recent Users</div><ul class="list-group list-group-flush"><li class="list-group-item" th:each="item:${stats.recentUsers}"><strong th:text="${item.title}"></strong><br><small th:text="${item.subtitle + ' • ' + item.timestamp}"></small></li></ul></div></div>
     </div>
