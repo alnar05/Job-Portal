@@ -11,10 +11,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/admin/users")
@@ -28,15 +31,27 @@ public class AdminUserMvcController {
     }
 
     @GetMapping
-    public String listUsers(@ModelAttribute("filter") AdminUserFilterDto filter, Model model) {
+    public String listUsers(@ModelAttribute("filter") AdminUserFilterDto filter,
+                            @RequestParam(required = false)
+                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                            LocalDate registeredFrom,
+                            @RequestParam(required = false)
+                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                            LocalDate registeredTo,
+                            Model model) {
+        filter.setRegisteredFrom(registeredFrom);
+        filter.setRegisteredTo(registeredTo);
+
         Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
-        Page<User> users = userService.searchUsers(filter, pageable);
+
+        Page<User> users = Optional.ofNullable(userService.searchUsers(filter, pageable))
+                .orElse(Page.empty(pageable));
 
         model.addAttribute("users", users);
         model.addAttribute("roles", Role.values());
+        model.addAttribute("selectedRole", filter.getRole());
         return "dashboard/admin-users";
     }
-
     @GetMapping("/{id}")
     public String userDetails(@PathVariable Long id, Model model) {
         User user = userService.getUserById(id)

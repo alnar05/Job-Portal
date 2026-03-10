@@ -18,12 +18,14 @@
                             <div class="mb-3">
                                 <label for="companyName" class="form-label">Company Name</label>
                                 <input id="companyName" type="text" class="form-control" th:field="*{companyName}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('companyName')}" th:errors="*{companyName}"></div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('companyName')}"
+                                     th:errors="*{companyName}"></div>
                             </div>
                             <div class="mb-3">
                                 <label for="website" class="form-label">Website</label>
                                 <input id="website" type="text" class="form-control" th:field="*{website}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('website')}" th:errors="*{website}"></div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('website')}"
+                                     th:errors="*{website}"></div>
                             </div>
                         </div>
 
@@ -31,12 +33,14 @@
                             <div class="mb-3">
                                 <label for="fullName" class="form-label">Full Name</label>
                                 <input id="fullName" type="text" class="form-control" th:field="*{fullName}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('fullName')}"
+                                     th:errors="*{fullName}"></div>
                             </div>
                             <div class="mb-3">
                                 <label for="resumeUrl" class="form-label">Resume URL</label>
                                 <input id="resumeUrl" type="text" class="form-control" th:field="*{resumeUrl}">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('resumeUrl')}" th:errors="*{resumeUrl}"></div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('resumeUrl')}"
+                                     th:errors="*{resumeUrl}"></div>
                             </div>
                         </div>
 

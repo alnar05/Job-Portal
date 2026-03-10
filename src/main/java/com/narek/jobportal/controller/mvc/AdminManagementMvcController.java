@@ -15,11 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -69,21 +65,17 @@ public class AdminManagementMvcController {
     @GetMapping("/applications")
     public String applications(@ModelAttribute("filter") AdminApplicationFilterDto filter, Model model) {
         Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize(), Sort.by(Sort.Direction.DESC, "appliedAt"));
-        model.addAttribute("applicationPage", applicationService.searchAdminApplications(filter, pageable));
+        model.addAttribute("applications", applicationService.searchAdminApplications(filter, pageable));
         model.addAttribute("applicationStatuses", ApplicationStatus.values());
         return "dashboard/admin-applications";
     }
 
     @PostMapping("/applications/{id}/status")
-    public String updateApplicationStatus(@RequestParam ApplicationStatus status,
-                                          @org.springframework.web.bind.annotation.PathVariable Long id,
+    public String updateApplicationStatus(@PathVariable Long id,
+                                          @RequestParam ApplicationStatus status,
                                           RedirectAttributes redirectAttributes) {
-        switch (status) {
-            case ACCEPTED -> applicationService.acceptApplication(id);
-            case REJECTED -> applicationService.rejectApplication(id);
-            case CANCELLED -> applicationService.cancelApplication(id);
-            default -> applicationService.markAsReviewed(id);
-        }
+
+        applicationService.updateStatus(id, status);
         redirectAttributes.addFlashAttribute("successMessage", "Application status updated.");
         return "redirect:/admin/applications";
     }

@@ -1,5 +1,6 @@
 package com.narek.jobportal.controller.mvc;
 
+import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.JobType;
@@ -63,6 +64,9 @@ public class JobMvcController {
     public String jobDetails(@PathVariable Long id, Model model) {
         JobResponseDto job = jobService.getJobById(id);
         model.addAttribute("job", job);
+        if (!model.containsAttribute("applicationForm")) {
+            model.addAttribute("applicationForm", new ApplicationCreateUpdateDto());
+        }
         return "jobs/details";
     }
 

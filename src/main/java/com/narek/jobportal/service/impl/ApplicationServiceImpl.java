@@ -145,6 +145,27 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void updateStatus(Long id, ApplicationStatus status) {
+        if (status == null) {
+            return;
+        }
+
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Application not found"));
+
+        application.setStatus(status);
+        applicationRepository.save(application);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public boolean hasCandidateApplied(Long candidateId, Long jobId) {
+        return applicationRepository.existsByCandidateIdAndJobId(candidateId, jobId);
+    }
+
+    @Override
     @PreAuthorize("hasRole('ADMIN')")
     public Page<ApplicationResponseDto> searchAdminApplications(AdminApplicationFilterDto filter, Pageable pageable) {
         Specification<Application> spec = Specification.where(ApplicationSpecification.byCandidate(filter.getCandidateId()))

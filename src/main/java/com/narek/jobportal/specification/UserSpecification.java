@@ -25,12 +25,18 @@ public class UserSpecification {
 
     public static Specification<User> registeredBetween(LocalDate from, LocalDate to) {
         return (root, query, cb) -> {
-            if (from == null && to == null) {
-                return cb.conjunction();
+            if (from != null && to != null) {
+                LocalDateTime start = from.atStartOfDay();
+                LocalDateTime end = to.plusDays(1).atStartOfDay();
+                return cb.between(root.get("createdAt"), start, end);
             }
-            LocalDateTime start = from != null ? from.atStartOfDay() : LocalDateTime.MIN;
-            LocalDateTime end = to != null ? to.plusDays(1).atStartOfDay() : LocalDateTime.MAX;
-            return cb.between(root.get("createdAt"), start, end);
+            if (from != null) {
+                return cb.greaterThanOrEqualTo(root.get("createdAt"), from.atStartOfDay());
+            }
+            if (to != null) {
+                return cb.lessThan(root.get("createdAt"), to.plusDays(1).atStartOfDay());
+            }
+            return cb.conjunction();
         };
     }
 }

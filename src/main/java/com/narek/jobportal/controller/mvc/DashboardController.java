@@ -1,14 +1,12 @@
 package com.narek.jobportal.controller.mvc;
 
-import com.narek.jobportal.dto.ActivityItemDto;
-import com.narek.jobportal.dto.AdminDashboardStatsDto;
-import com.narek.jobportal.dto.ApplicationResponseDto;
-import com.narek.jobportal.dto.ChartPointDto;
+import com.narek.jobportal.dto.*;
 import com.narek.jobportal.entity.*;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
 import com.narek.jobportal.service.UserService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -17,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,46 +51,72 @@ public class DashboardController {
     @GetMapping("/dashboard/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public String adminDashboard(Model model) {
-        List<Job> allJobs = jobService.searchAdminJobs(new com.narek.jobportal.dto.AdminJobFilterDto(), org.springframework.data.domain.Pageable.unpaged()).getContent();
+        List<JobResponseDto> jobs = jobService.getAllJobs();
         List<ApplicationResponseDto> applications = applicationService.getAllApplications();
-        List<User> users = userService.searchUsers(new com.narek.jobportal.dto.AdminUserFilterDto(), org.springframework.data.domain.Pageable.unpaged()).getContent();
+        List<User> employerUsers = userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 5))
+                .getContent();
+        List<User> candidateUsers = userService.getUsersByRole(Role.CANDIDATE, PageRequest.of(0, 5))
+                .getContent();
 
-        long activeJobs = allJobs.stream().filter(Job::isActive).count();
-        long closedJobs = allJobs.stream().filter(j -> j.getStatus() == JobStatus.CLOSED).count();
-        long expiredJobs = allJobs.stream().filter(Job::isExpired).count();
+        long activeJobs = jobs.stream()
+                .filter(j -> j.getClosingDate() != null &&
+                        j.getClosingDate().isAfter(LocalDate.now()))
+                .count();
 
-        Map<String, Long> usersByRole = Arrays.stream(Role.values())
-                .collect(Collectors.toMap(Enum::name, r -> users.stream().filter(u -> u.getRoles().contains(r)).count()));
-        Map<String, Long> usersByStatus = Map.of("ENABLED", users.stream().filter(User::isEnabled).count(), "DISABLED", users.stream().filter(u -> !u.isEnabled()).count());
+        long closedJobs = jobs.stream()
+                .filter(j -> j.getClosingDate() != null &&
+                        j.getClosingDate().isBefore(LocalDate.now()))
+                .count();
+
+        long pendingApplications = applications.stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.REVIEWED
+                        || a.getStatus() == ApplicationStatus.APPLIED)
+                .count();
+
+        long acceptedApplications = applications.stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED)
+                .count();
+
+        long rejectedApplications = applications.stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.REJECTED)
+                .count();
+
+        long cancelledApplications = applications.stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.CANCELLED)
+                .count();
+
+        model.addAttribute("totalJobs", jobs.size());
+        model.addAttribute("totalApplications", applications.size());
+        model.addAttribute("employerUsers", employerUsers);
+        model.addAttribute("candidateUsers", candidateUsers);
 
         AdminDashboardStatsDto stats = AdminDashboardStatsDto.builder()
-                .totalJobs(allJobs.size())
+                .totalJobs(jobs.size())
                 .activeJobs(activeJobs)
                 .closedJobs(closedJobs)
-                .expiredJobs(expiredJobs)
+                .expiredJobs(0)
                 .totalApplications(applications.size())
-                .pendingApplications(applications.stream().filter(a -> a.getStatus() == ApplicationStatus.APPLIED || a.getStatus() == ApplicationStatus.REVIEWED).count())
-                .acceptedApplications(applications.stream().filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).count())
-                .rejectedApplications(applications.stream().filter(a -> a.getStatus() == ApplicationStatus.REJECTED).count())
-                .cancelledApplications(applications.stream().filter(a -> a.getStatus() == ApplicationStatus.CANCELLED).count())
-                .totalUsers(users.size())
-                .usersByRole(usersByRole)
-                .usersByStatus(usersByStatus)
-                .jobsOverTime(groupDates(allJobs.stream().collect(Collectors.groupingBy(j -> j.getCreatedAt().toLocalDate(), Collectors.counting()))))
-                .applicationsOverTime(groupDates(applications.stream().collect(Collectors.groupingBy(a -> a.getAppliedAt().toLocalDate(), Collectors.counting()))))
-                .usersOverTime(groupDates(users.stream().collect(Collectors.groupingBy(u -> u.getCreatedAt().toLocalDate(), Collectors.counting()))))
-                .recentJobs(jobService.getRecentJobs(5).stream().map(j -> new ActivityItemDto(j.getTitle(), j.getEmployer().getCompanyName(), j.getCreatedAt().toString())).toList())
-                .recentApplications(applicationService.getRecentApplications(5).stream().map(a -> new ActivityItemDto(a.getCandidateName(), a.getJobTitle(), a.getAppliedAt().toString())).toList())
-                .recentUsers(userService.getRecentUsers(5).stream().map(u -> new ActivityItemDto(u.getEmail(), u.getRoles().toString(), u.getCreatedAt().toString())).toList())
+                .pendingApplications(pendingApplications)
+                .acceptedApplications(acceptedApplications)
+                .rejectedApplications(rejectedApplications)
+                .cancelledApplications(cancelledApplications)
+                .totalUsers(employerUsers.size() + candidateUsers.size())
+                .usersByRole(Map.of("EMPLOYER", (long) employerUsers.size(), "CANDIDATE", (long) candidateUsers.size()))
+                .usersByStatus(Map.of(
+                        "ENABLED", (long) employerUsers.stream()
+                                .filter(User::isEnabled).count() + candidateUsers.stream().filter(User::isEnabled).count(),
+                        "DISABLED", (long) employerUsers.stream()
+                                .filter(u -> !u.isEnabled()).count() + candidateUsers.stream().filter(u -> !u.isEnabled()).count()))
+                .jobsOverTime(List.of())
+                .applicationsOverTime(List.of())
+                .usersOverTime(List.of())
+                .recentJobs(List.of())
+                .recentApplications(List.of())
+                .recentUsers(List.of())
                 .build();
 
         model.addAttribute("stats", stats);
         return "dashboard/admin";
-    }
-
-    private List<ChartPointDto> groupDates(Map<LocalDate, Long> source) {
-        return source.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                .map(e -> new ChartPointDto(e.getKey().toString(), e.getValue())).toList();
     }
 
     @GetMapping({"/dashboard/employer", "/employer/dashboard"})

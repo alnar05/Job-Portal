@@ -29,7 +29,8 @@
                     <!-- Email -->
                     <div class="mb-3">
                         <label class="form-label" for="email">Email</label>
-                        <input id="email" type="email" th:field="*{email}" class="form-control" placeholder="you@example.com">
+                        <input id="email" type="email" th:field="*{email}" class="form-control"
+                               placeholder="you@example.com">
                         <div class="text-danger small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                     </div>
 
@@ -37,15 +38,18 @@
                     <div class="mb-3">
                         <label class="form-label" for="password">Password</label>
                         <input id="password" type="password" th:field="*{password}" class="form-control">
-                        <div class="text-danger small" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('password')}"
+                             th:errors="*{password}"></div>
                     </div>
 
                     <!-- Confirm Password -->
                     <div class="mb-3">
                         <label class="form-label" for="confirmPassword">Confirm Password</label>
                         <input id="confirmPassword" type="password" th:field="*{confirmPassword}" class="form-control">
-                        <div class="text-danger small" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
-                        <div class="text-danger small" th:if="${#fields.hasErrors('passwordConfirmed')}" th:errors="*{passwordConfirmed}"></div>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('confirmPassword')}"
+                             th:errors="*{confirmPassword}"></div>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('passwordConfirmed')}"
+                             th:errors="*{passwordConfirmed}"></div>
                     </div>
 
                     <!-- Role -->
@@ -63,12 +67,14 @@
                     <div class="mb-3" id="companyNameGroup">
                         <label class="form-label" for="companyName">Company Name</label>
                         <input id="companyName" type="text" th:field="*{companyName}" class="form-control">
-                        <div class="text-danger small" th:if="${#fields.hasErrors('companyNameValidForEmployer')}" th:errors="*{companyNameValidForEmployer}"></div>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('companyNameValidForEmployer')}"
+                             th:errors="*{companyNameValidForEmployer}"></div>
                     </div>
 
                     <div class="mb-3" id="websiteGroup">
                         <label class="form-label" for="website">Website (optional)</label>
-                        <input id="website" type="url" th:field="*{website}" class="form-control" placeholder="https://example.com">
+                        <input id="website" type="url" th:field="*{website}" class="form-control"
+                               placeholder="https://example.com">
                     </div>
 
 
@@ -76,12 +82,14 @@
                     <div class="mb-3" id="fullNameGroup">
                         <label class="form-label" for="fullName">Full Name</label>
                         <input id="fullName" type="text" th:field="*{fullName}" class="form-control">
-                        <div class="text-danger small" th:if="${#fields.hasErrors('fullNameValidForCandidate')}" th:errors="*{fullNameValidForCandidate}"></div>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('fullNameValidForCandidate')}"
+                             th:errors="*{fullNameValidForCandidate}"></div>
                     </div>
 
                     <div class="mb-4" id="resumeUrlGroup">
                         <label class="form-label" for="resumeUrl">Resume URL (optional)</label>
-                        <input id="resumeUrl" type="url" th:field="*{resumeUrl}" class="form-control" placeholder="https://example.com/resume.pdf">
+                        <input id="resumeUrl" type="url" th:field="*{resumeUrl}" class="form-control"
+                               placeholder="https://example.com/resume.pdf">
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">Register</button>

@@ -64,7 +64,8 @@
                     <p class="mb-1" th:text="${job.jobType}"></p>
                     <p class="mb-1" th:text="${job.location}"></p>
                     <p class="mb-1" th:text="${'Closes: ' + job.closingDate}"></p>
-                    <p class="fw-semibold mt-auto mb-3" th:text="${'Salary: $' + #numbers.formatDecimal(job.salary, 1, 'COMMA', 2, 'POINT')}"></p>
+                    <p class="fw-semibold mt-auto mb-3"
+                       th:text="${'Salary: $' + #numbers.formatDecimal(job.salary, 1, 'COMMA', 2, 'POINT')}"></p>
                     <a th:href="@{/jobs/{id}(id=${job.id})}" class="btn btn-outline-primary">View Details</a>
                 </div>
             </div>

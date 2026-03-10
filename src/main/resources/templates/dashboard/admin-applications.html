@@ -1,16 +1,71 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head><th:block th:replace="~{layout :: head('Admin Applications')}"></th:block></head><body class="bg-light"><div th:replace="~{layout :: navbar}"></div><div th:replace="~{layout :: flash-messages}"></div>
-<div class="container"><h2>Admin Application Oversight</h2>
-<form class="row g-2 mb-3" method="get" th:action="@{/admin/applications}">
-<input class="form-control col" name="candidateId" placeholder="Candidate ID" th:value="${filter.candidateId}">
-<input class="form-control col" name="jobId" placeholder="Job ID" th:value="${filter.jobId}">
-<select class="form-select col" name="status"><option value="">Any status</option><option th:each="s:${applicationStatuses}" th:value="${s}" th:text="${s}" th:selected="${filter.status==s}"></option></select>
-<button class="btn btn-primary col-auto">Filter</button></form>
-<form method="post" th:action="@{/admin/applications/bulk-status}">
-<div class="mb-2 d-flex gap-2"><select class="form-select w-auto" name="status"><option th:each="s:${applicationStatuses}" th:value="${s}" th:text="${s}"></option></select><button class="btn btn-secondary">Update Selected</button></div>
-<table class="table table-striped"><thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.a-check').forEach(c=>c.checked=this.checked)"></th><th>ID</th><th>Candidate</th><th>Job</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-<tr th:each="app:${applicationPage.content}"><td><input class="a-check" type="checkbox" name="applicationIds" th:value="${app.id}"></td><td th:text="${app.id}"></td><td th:text="${app.candidateEmail}"></td><td th:text="${app.jobTitle}"></td><td th:text="${app.status}"></td><td>
-<form th:action="@{/admin/applications/{id}/status(id=${app.id})}" method="post" class="d-inline"><input type="hidden" name="status" value="ACCEPTED"><button class="btn btn-sm btn-success">Accept</button></form>
-<form th:action="@{/admin/applications/{id}/status(id=${app.id})}" method="post" class="d-inline"><input type="hidden" name="status" value="REJECTED"><button class="btn btn-sm btn-danger">Reject</button></form>
-<form th:action="@{/admin/applications/{id}/status(id=${app.id})}" method="post" class="d-inline"><input type="hidden" name="status" value="CANCELLED"><button class="btn btn-sm btn-warning">Cancel</button></form>
-</td></tr></tbody></table></form></div>
-<th:block th:replace="~{layout :: scripts}"></th:block></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{layout :: head('Admin Applications')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container">
+    <h2>Admin Application Oversight</h2>
+
+    <form class="row g-2 mb-3" method="get" th:action="@{/admin/applications}">
+        <div class="col"><input class="form-control" name="candidateId" placeholder="Candidate ID" th:value="${filter.candidateId}"></div>
+        <div class="col"><input class="form-control" name="jobId" placeholder="Job ID" th:value="${filter.jobId}"></div>
+        <div class="col">
+            <select class="form-select" name="status">
+                <option value="">Any status</option>
+                <option th:each="s : ${applicationStatuses}" th:value="${s}" th:text="${s}" th:selected="${filter.status == s}"></option>
+            </select>
+        </div>
+        <div class="col-auto"><button class="btn btn-primary">Filter</button></div>
+    </form>
+
+    <form id="bulkStatusForm" method="post" th:action="@{/admin/applications/bulk-status}" class="mb-2 d-flex gap-2">
+        <select class="form-select w-auto" name="status">
+            <option th:each="s : ${applicationStatuses}" th:value="${s}" th:text="${s}"></option>
+        </select>
+        <button class="btn btn-secondary" type="submit">Update Selected</button>
+    </form>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th><input type="checkbox" onclick="document.querySelectorAll('.a-check').forEach(c => c.checked = this.checked)"></th>
+            <th>ID</th>
+            <th>Candidate</th>
+            <th>Job</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="app : ${applications.content}">
+            <td><input class="a-check" type="checkbox" name="applicationIds" th:value="${app.id}" form="bulkStatusForm"></td>
+            <td th:text="${app.id}"></td>
+            <td th:text="${app.candidateName}"></td>
+            <td th:text="${app.jobTitle}"></td>
+            <td th:text="${app.status}"></td>
+            <td class="d-flex gap-1">
+                <form th:action="@{/admin/applications/{id}/status(id=${app.id})}" method="post" class="d-inline">
+                    <input type="hidden" name="status" value="ACCEPTED">
+                    <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                </form>
+                <form th:action="@{/admin/applications/{id}/status(id=${app.id})}" method="post" class="d-inline">
+                    <input type="hidden" name="status" value="REJECTED">
+                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                </form>
+                <form th:action="@{/admin/applications/{id}/status(id=${app.id})}" method="post" class="d-inline">
+                    <input type="hidden" name="status" value="CANCELLED">
+                    <button type="submit" class="btn btn-sm btn-warning">Cancel</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>

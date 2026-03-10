@@ -12,11 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -43,22 +40,31 @@ public class ApplicationMvcController {
 
     @PostMapping("/apply/{jobId}")
     @PreAuthorize("hasRole('CANDIDATE')")
-    public String applyForJob(@PathVariable Long jobId,
-                              @RequestParam(name = "coverLetter", required = false) String coverLetter,
-                              RedirectAttributes redirectAttributes) {
-        ApplicationCreateUpdateDto dto = new ApplicationCreateUpdateDto();
-        dto.setJobId(jobId);
-        dto.setCoverLetter(coverLetter);
+    public String applyForJobb(@PathVariable Long jobId,
+                               @RequestParam(name = "coverLetter", required = false) String coverLetter,
+                               @ModelAttribute("applicationForm") ApplicationCreateUpdateDto applicationForm,
+                               BindingResult bindingResult,
+                               Model model,
+                               RedirectAttributes redirectAttributes) {
+        applicationForm.setJobId(jobId);
+        applicationForm.setCoverLetter(coverLetter);
 
-        var violations = validator.validate(dto);
+        var violations = validator.validate(applicationForm);
         if (!violations.isEmpty()) {
             ConstraintViolation<ApplicationCreateUpdateDto> violation = violations.iterator().next();
             redirectAttributes.addFlashAttribute("errorMessage", violation.getMessage());
             return "redirect:/jobs/" + jobId;
         }
 
+        Candidate currentCandidate = authService.getCurrentCandidate();
+        if (currentCandidate != null && applicationService.hasCandidateApplied(currentCandidate.getId(), jobId)) {
+            bindingResult.reject("duplicateApplication", "You have already applied to this job.");
+            model.addAttribute("job", jobService.getJobById(jobId));
+            return "jobs/details";
+        }
+
         try {
-            applicationService.createApplication(dto);
+            applicationService.createApplication(applicationForm);
             redirectAttributes.addFlashAttribute("successMessage", "Application submitted successfully.");
         } catch (JobApplicationClosedException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());

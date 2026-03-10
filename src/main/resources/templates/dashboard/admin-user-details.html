@@ -22,10 +22,12 @@
             <div class="d-flex gap-2 mt-3">
                 <form th:action="@{/admin/users/{id}/status(id=${user.id})}" method="post">
                     <input type="hidden" name="enabled" th:value="${!user.enabled}">
-                    <button type="submit" class="btn btn-warning" th:text="${user.enabled ? 'Disable Account' : 'Enable Account'}"></button>
+                    <button type="submit" class="btn btn-warning"
+                            th:text="${user.enabled ? 'Disable Account' : 'Enable Account'}"></button>
                 </form>
 
-                <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post" onsubmit="return confirm('Delete this user account?');">
+                <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
+                      onsubmit="return confirm('Delete this user account?');">
                     <button type="submit" class="btn btn-danger">Delete User</button>
                 </form>
             </div>

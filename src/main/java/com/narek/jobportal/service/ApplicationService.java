@@ -34,6 +34,10 @@ public interface ApplicationService {
 
     ApplicationResponseDto cancelApplication(Long applicationId);
 
+    void updateStatus(Long id, ApplicationStatus status);
+
+    boolean hasCandidateApplied(Long candidateId, Long jobId);
+
     Page<ApplicationResponseDto> searchAdminApplications(AdminApplicationFilterDto filter, Pageable pageable);
 
     void updateStatusBulk(List<Long> applicationIds, ApplicationStatus status);
