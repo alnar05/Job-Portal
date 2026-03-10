@@ -3,6 +3,7 @@ package com.narek.jobportal.controller.mvc;
 import com.narek.jobportal.dto.ApplicationCreateUpdateDto;
 import com.narek.jobportal.dto.JobCreateUpdateDto;
 import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.JobStatus;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.JobService;
 import jakarta.validation.Valid;
@@ -117,6 +118,10 @@ public class JobMvcController {
         JobCreateUpdateDto jobForm = new JobCreateUpdateDto(job.getTitle(), job.getDescription(), job.getSalary(), job.getJobType(), job.getLocation(), job.getClosingDate());
         model.addAttribute("jobId", id);
         model.addAttribute("jobForm", jobForm);
+        if (job.getStatus() == JobStatus.EXPIRED) {
+            model.addAttribute("expiredJob", true);
+            model.addAttribute("expiredJobError", "Expired jobs cannot be modified. Duplicate the job to repost.");
+        }
         return "jobs/edit";
     }
 
@@ -132,7 +137,15 @@ public class JobMvcController {
             return "jobs/edit";
         }
 
-        jobService.updateJob(id, jobForm);
+        try {
+            jobService.updateJob(id, jobForm);
+        } catch (IllegalArgumentException ex) {
+            bindingResult.reject("expiredJob", ex.getMessage());
+            model.addAttribute("jobId", id);
+            model.addAttribute("expiredJob", true);
+            model.addAttribute("expiredJobError", ex.getMessage());
+            return "jobs/edit";
+        }
         redirectAttributes.addFlashAttribute("successMessage", "Job updated successfully.");
         return "redirect:/jobs/" + id;
     }

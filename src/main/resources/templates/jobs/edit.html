@@ -15,6 +15,8 @@
                     <h3 class="mb-3">Edit Job</h3>
                     <form th:action="@{/jobs/edit/{id}(id=${jobId})}" th:object="${jobForm}" method="post" novalidate>
 
+                        <div th:if="${expiredJobError}" class="text-danger small mb-3" th:text="${expiredJobError}"></div>
+
                         <div class="mb-3">
                             <label for="title" class="form-label">Title</label>
                             <input id="title" type="text" th:field="*{title}" class="form-control"
@@ -71,7 +73,7 @@
                                  th:errors="*{closingDate}"></div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="submit" class="btn btn-primary" th:disabled="${expiredJob}">Save Changes</button>
                         <a th:href="@{/employer/dashboard}" class="btn btn-outline-secondary">Cancel</a>
                     </form>
                 </div>

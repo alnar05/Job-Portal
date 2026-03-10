@@ -29,6 +29,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -194,6 +195,40 @@ class JobMvcControllerTest {
                         .param("closingDate", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("jobs/edit"));
+    }
+
+    @Test
+    @WithMockUser(username = "emp", roles = {"EMPLOYER"})
+    void showEditForm_shouldExposeExpiredValidation_whenJobExpired() throws Exception {
+        given(authService.isCurrentEmployerJob(8L)).willReturn(true);
+        given(jobService.getJobById(8L)).willReturn(new JobResponseDto(8L, "Expired", "Desc", 500.0, JobType.CONTRACT, "Yerevan", LocalDate.now().minusDays(1), "ACME", JobStatus.EXPIRED));
+
+        mockMvc.perform(get("/jobs/edit/8"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("jobs/edit"))
+                .andExpect(model().attribute("expiredJob", true))
+                .andExpect(model().attribute("expiredJobError", "Expired jobs cannot be modified. Duplicate the job to repost."));
+    }
+
+    @Test
+    @WithMockUser(username = "emp", roles = {"EMPLOYER"})
+    void updateJob_shouldReturnEditViewWithError_whenExpiredJobUpdateAttempted() throws Exception {
+        given(authService.isCurrentEmployerJob(8L)).willReturn(true);
+        willThrow(new IllegalArgumentException("Expired jobs cannot be modified. Duplicate the job to repost."))
+                .given(jobService).updateJob(eq(8L), any(JobCreateUpdateDto.class));
+
+        mockMvc.perform(post("/jobs/edit/8")
+                        .with(csrf())
+                        .param("title", "Updated")
+                        .param("description", "Updated desc")
+                        .param("salary", "5000")
+                        .param("jobType", "CONTRACT")
+                        .param("location", "Yerevan")
+                        .param("closingDate", "2099-12-31"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("jobs/edit"))
+                .andExpect(model().attribute("expiredJob", true))
+                .andExpect(model().attribute("expiredJobError", "Expired jobs cannot be modified. Duplicate the job to repost."));
     }
 
     @Test

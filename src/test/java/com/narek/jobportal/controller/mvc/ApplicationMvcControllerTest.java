@@ -5,6 +5,7 @@ import com.narek.jobportal.dto.ApplicationResponseDto;
 import com.narek.jobportal.dto.JobResponseDto;
 import com.narek.jobportal.entity.ApplicationStatus;
 import com.narek.jobportal.entity.Candidate;
+import com.narek.jobportal.entity.JobStatus;
 import com.narek.jobportal.entity.JobType;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
@@ -126,7 +127,7 @@ class ApplicationMvcControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void applicationsForJob_shouldRenderView_whenAdmin() throws Exception {
-        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "Java", "Desc", 1000.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME"));
+        given(jobService.getJobById(2L)).willReturn(new JobResponseDto(2L, "Java", "Desc", 1000.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(10), "ACME", JobStatus.ACTIVE));
         given(applicationService.getApplicationsByJobId(2L)).willReturn(List.of());
 
         mockMvc.perform(get("/applications/job/2"))

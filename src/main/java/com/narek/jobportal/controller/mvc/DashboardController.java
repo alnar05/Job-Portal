@@ -17,8 +17,12 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Controller
 public class DashboardController {
@@ -114,9 +118,11 @@ public class DashboardController {
                                 .filter(User::isEnabled).count() + candidateUsers.stream().filter(User::isEnabled).count(),
                         "DISABLED", (long) employerUsers.stream()
                                 .filter(u -> !u.isEnabled()).count() + candidateUsers.stream().filter(u -> !u.isEnabled()).count()))
-                .jobsOverTime(List.of())
-                .applicationsOverTime(List.of())
-                .usersOverTime(List.of())
+                .jobsOverTime(buildMonthlyChartData(jobs, Job::getCreatedAt))
+                .applicationsOverTime(buildMonthlyChartData(applications, ApplicationResponseDto::getAppliedAt))
+                .usersOverTime(buildMonthlyChartData(
+                        Stream
+                                .concat(employerUsers.stream(), candidateUsers.stream()).toList(), User::getCreatedAt))
                 .recentJobs(jobService.getRecentJobs(5).stream()
                         .map(job -> new ActivityItemDto(
                                 job.getTitle(),
@@ -159,5 +165,23 @@ public class DashboardController {
         Candidate candidate = authService.getCurrentCandidate();
         model.addAttribute("applications", applicationService.getApplicationsByCandidateId(candidate.getId()));
         return "dashboard/candidate";
+    }
+
+    private <T> List<ChartPointDto> buildMonthlyChartData(List<T> source, Function<T, LocalDateTime> dateExtractor) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+        YearMonth now = YearMonth.now();
+
+        Map<YearMonth, Long> counts = source.stream()
+                .map(dateExtractor)
+                .filter(Objects::nonNull)
+                .map(YearMonth::from)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        List<ChartPointDto> points = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth month = now.minusMonths(i);
+            points.add(new ChartPointDto(month.format(formatter), counts.getOrDefault(month, 0L)));
+        }
+        return points;
     }
 }

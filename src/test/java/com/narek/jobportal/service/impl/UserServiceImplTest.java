@@ -9,13 +9,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.session.SessionRegistry;
 
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -103,6 +103,10 @@ class UserServiceImplTest {
         adminTarget.setId(10L);
         adminTarget.setRoles(Set.of(Role.ADMIN));
         given(userRepository.findById(10L)).willReturn(Optional.of(adminTarget));
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> userService.setEnabled(10L, false));
+
+        assertEquals("Admin accounts cannot be modified from admin management.", exception.getMessage());
     }
 
     @Test

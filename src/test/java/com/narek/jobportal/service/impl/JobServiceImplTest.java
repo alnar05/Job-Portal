@@ -122,6 +122,7 @@ class JobServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> jobService.updateJob(11L, dto));
 
         assertTrue(exception.getMessage().contains("Expired jobs cannot be modified"));
+        verify(jobRepository, never()).save(any(Job.class));
     }
 
     @Test

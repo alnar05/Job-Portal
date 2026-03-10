@@ -22,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -106,11 +107,14 @@ public class JobServiceImpl implements JobService {
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found with id " + id));
 
-        normalizeStatus(job);
-        if (job.getStatus() == JobStatus.EXPIRED) {
+        JobStatus status = job.getStatus() != null ? job.getStatus() : JobStatus.ACTIVE;
+        LocalDate closingDate = job.getClosingDate() != null ? job.getClosingDate() : LocalDate.now().plusYears(1);
+
+        if (status == JobStatus.EXPIRED || closingDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Expired jobs cannot be modified. Duplicate the job to repost.");
         }
 
+        normalizeStatus(job);
         applyDto(job, dto);
         normalizeStatus(job);
 

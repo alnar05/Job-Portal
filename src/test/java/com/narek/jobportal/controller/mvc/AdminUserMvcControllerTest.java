@@ -67,7 +67,7 @@ class AdminUserMvcControllerTest {
         Page<User> users = new PageImpl<>(List.of(user), PageRequest.of(0, 10), 1);
         given(userService.getUsersByRole(Role.EMPLOYER, PageRequest.of(0, 10))).willReturn(users);
 
-        mockMvc.perform(get("/admin/users"))
+        mockMvc.perform(get("/admin/users").param("role", "EMPLOYER"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard/admin-users"))
                 .andExpect(model().attributeExists("users"))

@@ -25,24 +25,4 @@ public class JobResponseDto {
     private LocalDate closingDate;
     private String companyName;
     private JobStatus status;
-
-    public JobResponseDto(
-            Long id,
-            String title,
-            String description,
-            Double salary,
-            JobType jobType,
-            String location,
-            LocalDate closingDate,
-            String companyName
-    ) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.salary = salary;
-        this.jobType = jobType;
-        this.location = location;
-        this.companyName = companyName;
-        this.closingDate = closingDate;
-    }
 }

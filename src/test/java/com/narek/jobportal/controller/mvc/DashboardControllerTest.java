@@ -2,13 +2,8 @@ package com.narek.jobportal.controller.mvc;
 
 import com.narek.jobportal.dto.ApplicationResponseDto;
 import com.narek.jobportal.dto.AdminJobFilterDto;
-import com.narek.jobportal.entity.ApplicationStatus;
-import com.narek.jobportal.entity.Job;
-import com.narek.jobportal.entity.JobStatus;
-import com.narek.jobportal.entity.Candidate;
-import com.narek.jobportal.entity.Employer;
-import com.narek.jobportal.entity.Role;
-import com.narek.jobportal.entity.User;
+import com.narek.jobportal.dto.JobResponseDto;
+import com.narek.jobportal.entity.*;
 import com.narek.jobportal.service.ApplicationService;
 import com.narek.jobportal.service.AuthService;
 import com.narek.jobportal.service.JobService;
@@ -138,12 +133,18 @@ class DashboardControllerTest {
     @WithMockUser(username = "emp", roles = {"EMPLOYER"})
     void employerDashboard_shouldRenderView_whenEmployer() throws Exception {
         given(authService.getCurrentEmployer()).willReturn(new Employer(3L, "ACME", "acme.com", null));
-        given(jobService.getJobsByEmployerId(3L)).willReturn(List.of());
+        JobResponseDto active = new JobResponseDto(1L, "Java", "Desc", 1000.0, JobType.FULL_TIME, "Berlin", LocalDate.now().plusDays(5), "ACME", JobStatus.ACTIVE);
+        JobResponseDto expired = new JobResponseDto(2L, "Legacy", "Desc", 900.0, JobType.CONTRACT, "Berlin", LocalDate.now().minusDays(1), "ACME", JobStatus.EXPIRED);
+        JobResponseDto closed = new JobResponseDto(3L, "Ops", "Desc", 800.0, JobType.PART_TIME, "Berlin", LocalDate.now().plusDays(1), "ACME", JobStatus.CLOSED);
+        given(jobService.getJobsByEmployerId(3L)).willReturn(List.of(active, expired, closed));
 
         mockMvc.perform(get("/dashboard/employer"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard/employer"))
-                .andExpect(model().attributeExists("jobs"));
+                .andExpect(model().attributeExists("activeJobs", "expiredJobs", "closedJobs"))
+                .andExpect(model().attribute("activeJobs", List.of(active)))
+                .andExpect(model().attribute("expiredJobs", List.of(expired)))
+                .andExpect(model().attribute("closedJobs", List.of(closed)));
     }
 
     @Test
