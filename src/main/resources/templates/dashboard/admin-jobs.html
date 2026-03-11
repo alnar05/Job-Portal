@@ -36,6 +36,7 @@
                 <th>Employer</th>
                 <th>Status</th>
                 <th>Expiration date</th>
+                <th>Salary</th>
                 <th>Applicants</th>
             </tr>
             </thead>
@@ -51,6 +52,7 @@
                     <span th:if="${job.effectiveStatus.name() != 'EXPIRED'}" th:text="${job.status}"></span>
                 </td>
                 <td th:text="${job.closingDate}"></td>
+                <td th:text="${#numbers.formatInteger(job.salary, 0, 'COMMA')} + ' $'"></td>
                 <td th:text="${applicantCounts[job.id] ?: 0}"></td>
             </tr>
             </tbody>

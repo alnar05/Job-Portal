@@ -105,7 +105,7 @@ class ApplicationServiceImplTest {
                 () -> applicationService.createApplication(dto)
         );
 
-        assertEquals("You have already already applied for job with id 10", exception.getMessage());
+        assertEquals("You have already applied for job with id 10", exception.getMessage());
     }
 
     @Test

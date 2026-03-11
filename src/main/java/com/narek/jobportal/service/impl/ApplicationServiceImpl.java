@@ -57,7 +57,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         if (applicationRepository.existsByJobIdAndCandidateId(dto.getJobId(), candidate.getId())) {
             throw new DuplicateApplicationException(
-                    "You have already already applied for job with id " + dto.getJobId()
+                    "You have already applied for job with id " + dto.getJobId()
             );
         }
 
