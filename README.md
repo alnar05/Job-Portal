@@ -53,7 +53,7 @@ mysql --version
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/alnar05/Job-Portal.git
 cd Job-Portal
 ```
 
