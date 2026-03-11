@@ -4,6 +4,7 @@ A Spring Boot job portal where **candidates** apply to jobs, **employers** manag
 
 ## Table of Contents
 
+- [Screenshots](#screenshots)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Project Setup](#project-setup)
@@ -15,6 +16,26 @@ A Spring Boot job portal where **candidates** apply to jobs, **employers** manag
 - [Role Restrictions & Protected Actions](#role-restrictions--protected-actions)
 - [REST Endpoints](#rest-endpoints)
 - [Testing](#testing)
+
+---
+
+## Screenshots
+
+### Login & Registration
+![Login](docs/screenshots/login.png)
+![Register](docs/screenshots/register.png)
+
+### Candidate — Job Search
+![Job Search](docs/screenshots/job_search.png)
+
+### Candidate — Job Details & Application
+![Application](docs/screenshots/application.png)
+
+### Employer Dashboard
+![Employer Dashboard](docs/screenshots/employer_dashboard.png)
+
+### Admin Dashboard
+![Admin Dashboard](docs/screenshots/admin_dashboard.png)
 
 ---
 
