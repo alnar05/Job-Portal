@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{layout :: head('Edit Job | Job Portal')}"></th:block>
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: flash-messages}"></div>
+
+<div class="container" th:if="${jobForm != null and jobId != null}">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="mb-3">Edit Job</h3>
+                    <form th:action="@{/jobs/edit/{id}(id=${jobId})}" th:object="${jobForm}" method="post" novalidate>
+
+                        <div th:if="${expiredJobError}" class="text-danger small mb-3" th:text="${expiredJobError}"></div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input id="title" type="text" th:field="*{title}" class="form-control"
+                                   th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}"
+                                 th:errors="*{title}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea id="description" th:field="*{description}" rows="5" class="form-control"
+                                      th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"></textarea>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}"
+                                 th:errors="*{description}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="salary" class="form-label">Salary</label>
+                            <input id="salary" type="number" step="0.01" min="0.01" required th:field="*{salary}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('salary')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('salary')}"
+                                 th:errors="*{salary}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jobType" class="form-label">Job Type</label>
+                            <select id="jobType" th:field="*{jobType}" class="form-select"
+                                    th:classappend="${#fields.hasErrors('jobType')} ? 'is-invalid' : ''">
+                                <option value="">Select job type</option>
+                                <option th:value="${T(com.narek.jobportal.entity.JobType).FULL_TIME}">Full Time</option>
+                                <option th:value="${T(com.narek.jobportal.entity.JobType).PART_TIME}">Part Time</option>
+                                <option th:value="${T(com.narek.jobportal.entity.JobType).CONTRACT}">Contract</option>
+                                <option th:value="${T(com.narek.jobportal.entity.JobType).INTERNSHIP}">Internship
+                                </option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('jobType')}"
+                                 th:errors="*{jobType}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input id="location" type="text" th:field="*{location}" class="form-control"
+                                   th:classappend="${#fields.hasErrors('location')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('location')}"
+                                 th:errors="*{location}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="closingDate" class="form-label">Closing Date</label>
+                            <input id="closingDate" type="date" th:field="*{closingDate}" class="form-control"
+                                   th:classappend="${#fields.hasErrors('closingDate')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('closingDate')}"
+                                 th:errors="*{closingDate}"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" th:disabled="${expiredJob}">Save Changes</button>
+                        <a th:href="@{/employer/dashboard}" class="btn btn-outline-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container" th:if="${jobForm == null or jobId == null}">
+    <div class="alert alert-warning">Job data is unavailable.</div>
+</div>
+
+<th:block th:replace="~{layout :: scripts}"></th:block>
+</body>
+</html>
